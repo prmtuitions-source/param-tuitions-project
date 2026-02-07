@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../utils/supabaseClient';
+import { supabase } from '../shared/utils/supabaseClient';
 
 export default function TeacherIDCard() {
   const [profile, setProfile] = useState(null);

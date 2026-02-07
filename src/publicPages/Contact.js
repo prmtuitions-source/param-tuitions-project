@@ -1,8 +1,8 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import Header from '../components/Header';
-import Footer from '../components/Footer';
-import SectionDivider from '../components/SectionDivider';
+import Header from '../shared/components/Header';
+import Footer from '../shared/components/Footer';
+import SectionDivider from '../shared/components/SectionDivider';
 import useScrollAnimation from '../hooks/useScrollAnimation';
 import { Phone, Mail, Clock, Send } from 'lucide-react';
 

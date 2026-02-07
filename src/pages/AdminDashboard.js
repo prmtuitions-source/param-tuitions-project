@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../../shared/utils/supabaseClient';
-import Header from '../../shared/components/Header';
-import Footer from '../../shared/components/Footer';
+import { supabase } from '../shared/utils/supabaseClient';
+import Header from '../shared/components/Header';
+import Footer from '../shared/components/Footer';
 
 /**
  * PARAM TUITIONS - ADMIN DASHBOARD (Location Scoped)

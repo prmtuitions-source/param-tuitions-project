@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import DynamicFormBuilder from '../components/DynamicFormBuilder';
-import Header from '../components/Header';
+import DynamicFormBuilder from '../shared/components/DynamicFormBuilder';
+import Header from '../shared/components/Header';
 
 const SuperAdminForms = () => {
   const [activeTab, setActiveTab] = useState('institute_request');

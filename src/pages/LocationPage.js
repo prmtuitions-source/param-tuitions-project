@@ -2,14 +2,14 @@
 
 import React from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { supabase } from '../utils/supabaseClient';
-import Header from '../components/Header';
-import Footer from '../components/Footer';
-import GoldEnquiryForm from '../components/GoldEnquiryForm';
-import SectionDivider from '../components/SectionDivider';
+import { supabase } from '../shared/utils/supabaseClient';
+import Header from '../shared/components/Header';
+import Footer from '../shared/components/Footer';
+import GoldEnquiryForm from '../shared/components/GoldEnquiryForm';
+import SectionDivider from '../shared/components/SectionDivider';
 import useScrollAnimation from '../hooks/useScrollAnimation';
-import DemoForm from '../components/DemoForm';
-import { getAdminForLocation } from '../utils/adminConfig';
+import DemoForm from '../shared/components/DemoForm';
+import { getAdminForLocation } from '../shared/utils/adminConfig';
 
 const LocationPage = () => {
   useScrollAnimation();

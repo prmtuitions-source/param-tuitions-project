@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { blogDataMap } from '../blogData';
-import { supabase } from '../utils/supabaseClient';
+import { supabase } from '../shared/utils/supabaseClient';
 import './IndividualBlog.css';
 
 import BenefitsOfHomeTuition from './benefits-of-home-tuition-in-india';
@@ -14,9 +14,9 @@ import HowToChooseTutor from './how-to-choose-tutor';
 import OnlineVsOffline from './online-vs-offline';
 import GrowthInVaranasi from './growth-in-varanasi';
 import QualityAndSafety from './quality-and-safety';
-import ContactSection from '../components/ContactSection';
-import Header from '../components/Header';
-import Footer from '../components/Footer';
+import ContactSection from '../shared/components/ContactSection';
+import Header from '../shared/components/Header';
+import Footer from '../shared/components/Footer';
 
 const componentMap = {
     'benefits-of-home-tuition-in-india': BenefitsOfHomeTuition,

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../utils/supabaseClient';
+import { supabase } from '../shared/utils/supabaseClient';
 import QRCode from 'react-qrcode-logo'; // Install this: npm install react-qrcode-logo
 
 export default function TeacherDemoPortal({ tuitionId, parentLocation }) {

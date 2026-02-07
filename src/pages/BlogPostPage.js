@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { supabase } from '../utils/supabaseClient';
-import Header from '../components/Header';
-import Footer from '../components/Footer';
+import { supabase } from '../shared/utils/supabaseClient';
+import Header from '../shared/components/Header';
+import Footer from '../shared/components/Footer';
 
 const BlogPostPage = () => {
   const { slug } = useParams();

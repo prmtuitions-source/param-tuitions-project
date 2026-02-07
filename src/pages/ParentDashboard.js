@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../utils/supabaseClient';
-import Header from '../components/Header';
+import { supabase } from '../shared/utils/supabaseClient';
+import Header from '../shared/components/Header';
 // NEW: Import the Location Guard for mandatory GPS pinning
-import LocationGuard from '../components/LocationGuard';
+import LocationGuard from '../shared/components/LocationGuard';
 import useLocationTracker from '../hooks/useLocationTracker';
-import { getAssignedAdmin } from '../utils/adminAssignment';
+import { getAssignedAdmin } from '../shared/utils/adminAssignment';
 
 export default function ParentDashboard() {
   const navigate = useNavigate();

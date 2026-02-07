@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../utils/supabaseClient';
-import DynamicFormRenderer from '../components/DynamicFormRenderer';
-import Header from '../components/Header';
+import { supabase } from '../shared/utils/supabaseClient';
+import DynamicFormRenderer from '../shared/components/DynamicFormRenderer';
+import Header from '../shared/components/Header';
 import useLocationTracker from '../hooks/useLocationTracker';
 
 const InstituteDashboard = () => {

@@ -2,30 +2,30 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 
 // --- 1. IMPORT PUBLIC PAGES ---
-import Home from './pages/Home';
+import Home from './publicPages/Home';
 import LoginParent from './pages/LoginParent';
 import LoginTeacher from './pages/LoginTeacher';
 import LoginStaff from './pages/LoginStaff';
 import LoginInstitute from './pages/LoginInstitute';
 import AdminLogin from './pages/AdminLogin';
 import PostInquiry from './pages/PostInquiry';
-import About from './pages/About';
-import Contact from './pages/Contact';
+import About from './publicPages/About';
+import Contact from './publicPages/Contact';
 import LocationPage from './pages/LocationPage';
-import FAQ from './pages/FAQ';
-import Terms from './pages/Terms';
-import Blog from './pages/Blog';
+import FAQ from './publicPages/FAQ';
+import Terms from './publicPages/Terms';
+import Blog from './publicPages/Blog';
 import BlogPostPage from './pages/BlogPostPage';
-import TuitionJobs from './pages/TuitionJobs';
+import TuitionJobs from './publicPages/TuitionJobs';
 import './styles/Home.css';
 
 // --- 2. IMPORT DASHBOARDS ---
-import ParentDashboard from './pages/ParentDashboard';
-import TeacherDashboard from './pages/TeacherDashboard';
+import ParentDashboard from './roles/parent/Dashboard';
+import TeacherDashboard from './roles/teacher/Dashboard';
 import TeacherJobBoard from './pages/TeacherJobBoard';
-import AdminDashboard from './pages/AdminDashboard';
+import AdminDashboard from './roles/admin/Dashboard';
 import VerifyTeachers from './pages/VerifyTeachers';
-import SuperAdminDashboard from './pages/SuperAdminDashboard';
+import SuperAdminDashboard from './roles/superAdmin/Dashboard';
 import MonthlyReport from './pages/MonthlyReport';
 import TeacherIDCard from './pages/TeacherIDCard';
 import TuitionControlRoom from './pages/TuitionControlRoom';
@@ -33,9 +33,9 @@ import InstituteDashboard from './pages/InstituteDashboard';
 import SuperAdminForms from './pages/SuperAdminForms';
 
 // --- 3. IMPORT SECURITY & COMPONENTS ---
-import LoginRedirect from './components/LoginRedirect';
-import ProtectedRoute from './components/ProtectedRoute';
-import ScrollToTop from './components/ScrollToTop';
+import LoginRedirect from './shared/components/LoginRedirect';
+import ProtectedRoute from './shared/components/ProtectedRoute';
+import ScrollToTop from './shared/components/ScrollToTop';
 
 /**
  * PARAM TUITION BUREAU - 2026 MASTER ARCHITECTURE
@@ -96,7 +96,7 @@ function App() {
 
           {/* --- PROTECTED PARENT ROUTES --- */}
           <Route 
-            path="/parent-dashboard" 
+            path="/parent/dashboard" 
             element={
               <ProtectedRoute requiredRole="parent">
                 <ParentDashboard />
@@ -106,7 +106,7 @@ function App() {
 
           {/* --- PROTECTED TEACHER ROUTES --- */}
           <Route 
-            path="/teacher-dashboard" 
+            path="/teacher/dashboard" 
             element={
               <ProtectedRoute requiredRole="teacher">
                 <TeacherDashboard />
@@ -141,7 +141,7 @@ function App() {
 
           {/* --- PROTECTED STAFF & ADMIN ROUTES --- */}
           <Route 
-            path="/admin-dashboard" 
+            path="/admin/dashboard" 
             element={
               <ProtectedRoute requiredRole="admin">
                 <AdminDashboard />
@@ -167,7 +167,7 @@ function App() {
 
           {/* --- MASTER SUPER ADMIN ROUTES --- */}
           <Route 
-            path="/super-admin-dashboard" 
+            path="/super-admin/dashboard" 
             element={
               <ProtectedRoute requiredRole="super_admin">
                 <SuperAdminDashboard />

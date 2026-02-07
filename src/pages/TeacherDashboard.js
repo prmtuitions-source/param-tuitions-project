@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../../shared/utils/supabaseClient';
-import Header from '../../shared/components/Header';
+import { supabase } from '../shared/utils/supabaseClient';
+import Header from '../shared/components/Header';
 // NEW: Import the Location Guard for mandatory GPS pinning
-import LocationGuard from '../../shared/components/LocationGuard'; 
+import LocationGuard from '../shared/components/LocationGuard'; 
 // Note: If you see "Tracking Prevention blocked access to storage for ...leaflet.css", 
 // it is a browser warning related to the CDN used in LocationGuard. It usually does not affect functionality.
-import useLocationTracker from '../../hooks/useLocationTracker';
-import DynamicFormRenderer from '../../shared/components/DynamicFormRenderer';
+import useLocationTracker from '../hooks/useLocationTracker';
+import DynamicFormRenderer from '../shared/components/DynamicFormRenderer';
 
 /**
  * PARAM TUITIONS - TEACHER MASTER COMMAND CENTER

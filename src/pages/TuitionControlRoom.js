@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { supabase } from '../utils/supabaseClient';
-import Header from '../components/Header';
+import { supabase } from '../shared/utils/supabaseClient';
+import Header from '../shared/components/Header';
 
 export default function TuitionControlRoom() {
   const { id: tuitionId } = useParams();

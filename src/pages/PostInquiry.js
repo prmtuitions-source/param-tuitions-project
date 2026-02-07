@@ -1,8 +1,8 @@
 import React, { useEffect } from 'react';
-import Header from '../components/Header';
-import Footer from '../components/Footer';
-import GoldEnquiryForm from '../components/GoldEnquiryForm';
-import ContactSection from '../components/ContactSection';
+import Header from '../shared/components/Header';
+import Footer from '../shared/components/Footer';
+import GoldEnquiryForm from '../shared/components/GoldEnquiryForm';
+import ContactSection from '../shared/components/ContactSection';
 
 const PostInquiry = () => {
   useEffect(() => {
