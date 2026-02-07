@@ -1,0 +1,80 @@
+.terms-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 40px 20px;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.terms-header {
+  text-align: center;
+  margin-bottom: 40px;
+  border-bottom: 2px solid #f1f1f1;
+  padding-bottom: 20px;
+}
+
+.terms-header h1 {
+  color: #1e3a8a; /* blue-900 */
+  font-size: 2.5rem;
+  margin-bottom: 10px;
+  text-transform: uppercase;
+  font-weight: 900;
+}
+
+.terms-header p {
+  color: #64748b;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+/* --- SCOPED LEGAL LAYOUT RESET --- */
+.legal-policy-container {
+  background: #fff;
+  color: #334155; /* slate-700 */
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+/* Force Reset Margins & Paddings within scope to remove unwanted gaps */
+.legal-policy-container h1,
+.legal-policy-container h2,
+.legal-policy-container h3,
+.legal-policy-container h4,
+.legal-policy-container p,
+.legal-policy-container ul,
+.legal-policy-container li {
+  margin: 0;
+  padding: 0;
+}
+
+/* Re-apply controlled spacing for professional layout */
+.legal-policy-container h3 {
+  color: #1e40af; /* blue-800 */
+  font-size: 1.1rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  margin-top: 1.5rem;
+  margin-bottom: 0.75rem;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 0.25rem;
+}
+
+.legal-policy-container p {
+  margin-bottom: 1rem;
+}
+
+.legal-policy-container ul {
+  list-style-type: disc;
+  padding-left: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.legal-policy-container li {
+  margin-bottom: 0.5rem;
+  padding-left: 0.25rem;
+}
+
+.legal-policy-container strong {
+  color: #0f172a; /* slate-900 */
+  font-weight: 700;
+}

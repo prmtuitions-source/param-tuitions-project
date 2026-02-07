@@ -1,0 +1,16 @@
+{
+  "files": {
+    "main.css": "/static/css/main.da34486e.css",
+    "main.js": "/static/js/main.12a6f19e.js",
+    "static/media/home-tuition-vs-coaching.jpg": "/static/media/home-tuition-vs-coaching.c7d2139476533b08d6ed.jpg",
+    "static/media/successful-home-tutor.jpg": "/static/media/successful-home-tutor.bb987780f159b0cb2686.jpg",
+    "static/media/home-tuition-varanasi-student-studying.png": "/static/media/home-tuition-varanasi-student-studying.4bfc6f40cebb9b7489bb.png",
+    "index.html": "/index.html",
+    "main.da34486e.css.map": "/static/css/main.da34486e.css.map",
+    "main.12a6f19e.js.map": "/static/js/main.12a6f19e.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.da34486e.css",
+    "static/js/main.12a6f19e.js"
+  ]
+}

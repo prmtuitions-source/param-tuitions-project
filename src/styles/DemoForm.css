@@ -1,0 +1,107 @@
+:root {
+  --primary-navy: #001a33;
+  --whatsapp-green: #25d366;
+  --gold-accent: #c5a059;
+  --bg-light: #f9f9f9;
+}
+
+.demo-section {
+  background-color: var(--bg-light);
+  padding: 60px 20px;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.demo-section .container {
+  max-width: 1000px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.section-title {
+  color: var(--primary-navy);
+  font-size: 2rem;
+  margin-bottom: 10px;
+}
+
+.underline {
+  width: 60px;
+  height: 3px;
+  background-color: var(--gold-accent);
+  margin: 0 auto 40px;
+}
+
+.form-wrapper {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 40px;
+  text-align: left;
+}
+
+.form-card {
+  flex: 1;
+  min-width: 300px;
+  background: #fff;
+  padding: 30px;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+}
+
+.form-card input, .form-card select, .form-card textarea {
+  width: 100%;
+  padding: 12px;
+  margin-bottom: 20px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 16px;
+  box-sizing: border-box;
+}
+
+.btn-submit {
+  width: 100%;
+  padding: 15px;
+  background: #000;
+  color: #fff;
+  border: none;
+  border-radius: 30px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.btn-submit:hover {
+  transform: scale(1.02);
+}
+
+.contact-info {
+  flex: 1;
+  min-width: 300px;
+}
+
+.contact-info h3 {
+  font-size: 1.5rem;
+  color: #000;
+  margin-bottom: 15px;
+}
+
+.btn-connect {
+  display: block;
+  text-decoration: none;
+  text-align: center;
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 15px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.btn-call { background-color: var(--primary-navy); }
+.btn-whatsapp { background-color: var(--whatsapp-green); }
+
+.office-location {
+  display: flex;
+  gap: 10px;
+  margin-top: 30px;
+  color: #555;
+  font-size: 14px;
+  line-height: 1.6;
+}

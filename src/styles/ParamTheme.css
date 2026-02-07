@@ -1,0 +1,70 @@
+:root {
+  --param-blue: #1e3a8a;       /* Trust & Authority */
+  --param-gold: #eab308;       /* Excellence & Action */
+  --param-slate: #f1f5f9;      /* Section Backgrounds */
+  --param-white: #ffffff;
+  --param-text: #1e293b;
+  --radius-premium: 30px;      /* Large rounded look */
+}
+
+/* Global Styles */
+body {
+  font-family: 'Inter', sans-serif;
+  color: var(--param-text);
+  line-height: 1.6;
+}
+
+/* Premium Header/Title Styling */
+.header-title {
+  color: var(--param-blue);
+  font-weight: 900;
+  text-transform: uppercase;
+  font-style: italic;
+  letter-spacing: -1px;
+}
+
+/* The "Gold" CTA Button */
+.btn-gold {
+  background-color: var(--param-gold);
+  color: #000;
+  font-weight: 900;
+  text-transform: uppercase;
+  border-radius: 12px;
+  padding: 12px 24px;
+  border: none;
+  box-shadow: 0 4px 15px rgba(234, 179, 8, 0.3);
+  transition: transform 0.2s;
+}
+
+.btn-gold:hover {
+  transform: scale(1.05);
+  background-color: #d9a807;
+}
+
+/* The "Blue" Authority Section */
+.blue-section {
+  background-color: var(--param-blue);
+  color: white;
+  padding: 60px 20px;
+  border-radius: var(--radius-premium);
+}
+
+/* Stat Counters Styling */
+.stat-box {
+  text-align: center;
+  padding: 20px;
+}
+
+.stat-number {
+  font-size: 2.5rem;
+  font-weight: 900;
+  color: var(--param-blue);
+}
+
+.stat-label {
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: #64748b;
+  letter-spacing: 2px;
+}
