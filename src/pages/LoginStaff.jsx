@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../shared/utils/supabaseClient';
 import Header from '../shared/components/Header';
 import Footer from '../shared/components/Footer';
-import uiNotify from '../shared/utils/uiNotify';
 
 export default function LoginStaff() {
   const [email, setEmail] = useState('');
@@ -12,7 +11,7 @@ export default function LoginStaff() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (typeof document !== 'undefined') document.title = "Staff Login | Param Tuition Bureau";
+    document.title = "Staff Login | Param Tuition Bureau";
   }, []);
 
   const handleLogin = async (e) => {
@@ -22,7 +21,7 @@ export default function LoginStaff() {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
     if (error) {
-      uiNotify.alert("Invalid Credentials: " + error.message);
+      alert("Invalid Credentials: " + error.message);
     } else {
       const { data: profile } = await supabase
         .from('profiles')
@@ -33,12 +32,12 @@ export default function LoginStaff() {
       const role = profile?.user_role || profile?.role;
 
       if (role === 'admin') {
-        navigate('/admin/dashboard', { replace: true });
+        navigate('/admin-dashboard', { replace: true });
       } else if (role === 'super_admin') {
-        navigate('/super-admin/dashboard', { replace: true });
+        navigate('/super-admin-dashboard', { replace: true });
       } else {
         await supabase.auth.signOut();
-        uiNotify.alert("Access Denied: This portal is for Staff/Admins only.");
+        alert("Access Denied: This portal is for Staff/Admins only.");
       }
     }
     setLoading(false);

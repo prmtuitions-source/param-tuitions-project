@@ -1,4 +1,4 @@
-// c:\Users\GAURAV PRINCE\Documents\Param-Tuitions-Project\src\pages\LocationPage.jsx
+// c:\Users\GAURAV PRINCE\Documents\Param-Tuitions-Project\src\pages\LocationPage.js
 
 import React from 'react';
 import { useParams, Link } from 'react-router-dom';
@@ -18,7 +18,7 @@ const LocationPage = () => {
   const [tuitions, setTuitions] = React.useState([]);
 
   React.useEffect(() => {
-    if (typeof document !== 'undefined') document.title = `Best Home Tutors in ${areaName} | Param Tuition Bureau`;
+    document.title = `Best Home Tutors in ${areaName} | Param Tuition Bureau`;
     
     const fetchTuitions = async () => {
       const { data } = await supabase

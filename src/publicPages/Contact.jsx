@@ -1,57 +1,37 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import Header from '../shared/components/Header';
 import Footer from '../shared/components/Footer';
 import SectionDivider from '../shared/components/SectionDivider';
 import useScrollAnimation from '../hooks/useScrollAnimation';
-import uiNotify from '../shared/utils/uiNotify';
 import { Phone, Mail, Clock, Send } from 'lucide-react';
 
 const Contact = () => {
   useScrollAnimation();
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    const form = e.target;
-    const name = form.name.value?.trim() || '';
-    const phone = form.phone.value?.trim() || '';
-    const subject = form.subject.value?.trim() || '';
-    const message = form.message.value?.trim() || '';
-
-    const adminNumber = '918756525373';
-    const textLines = [];
-    if (name) textLines.push(`Name: ${name}`);
-    if (phone) textLines.push(`Phone: ${phone}`);
-    if (subject) textLines.push(`Subject: ${subject}`);
-    if (message) textLines.push(`Message: ${message}`);
-    const text = textLines.join('\n');
-    if (!text) {
-      uiNotify.alert('Please enter a message before sending.');
-      return;
-    }
-
-    const url = `https://wa.me/${adminNumber}?text=${encodeURIComponent(text)}`;
-    if (typeof globalThis !== 'undefined' && typeof globalThis.open === 'function') {
-      globalThis.open(url, '_blank', 'noopener,noreferrer');
-    } else if (typeof location !== 'undefined') {
-      location.href = url;
-    }
-  };
-
   return (
     <div className="contact-page bg-slate-50">
       <Header />
+
+      {/* 1. HERO SECTION */}
       <section className="section reveal text-center pt-24 pb-16 bg-white">
         <div className="container">
-          <h1 className="text-4xl md:text-5xl font-black italic uppercase tracking-tighter text-navy">GET IN TOUCH</h1>
-          <p className="text-lg text-gold mt-2">Connect with Varanasi's Leading Tuition Bureau</p>
+          <h1 className="text-4xl md:text-5xl font-black italic uppercase tracking-tighter text-navy">
+            GET IN TOUCH
+          </h1>
+          <p className="text-lg text-gold mt-2">
+            Connect with Varanasi's Leading Tuition Bureau
+          </p>
         </div>
       </section>
 
       <SectionDivider />
 
+      {/* 2. INFO GRID */}
       <section className="section reveal bg-slate-50 py-20">
         <div className="container">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {/* Call Us Card */}
             <div className="info-card bg-white p-8 rounded-3xl shadow-sm text-center">
               <div className="flex justify-center mb-4">
                 <div className="bg-navy text-white p-3 rounded-full">
@@ -59,8 +39,11 @@ const Contact = () => {
                 </div>
               </div>
               <h3 className="text-xl font-bold uppercase text-navy">Call Us</h3>
-              <p className="text-slate-600 mt-2"><a href="tel:+918756525373" className="hover:text-gold">+91 87565 25373</a></p>
+              <p className="text-slate-600 mt-2">
+                <a href="tel:+918756525373" className="hover:text-gold">+91 87565 25373</a>
+              </p>
             </div>
+            {/* Email Us Card */}
             <div className="info-card bg-white p-8 rounded-3xl shadow-sm text-center">
               <div className="flex justify-center mb-4">
                 <div className="bg-navy text-white p-3 rounded-full">
@@ -68,8 +51,11 @@ const Contact = () => {
                 </div>
               </div>
               <h3 className="text-xl font-bold uppercase text-navy">Email Us</h3>
-              <p className="text-slate-600 mt-2"><a href="mailto:prmtuitions@gmail.com" className="hover:text-gold">prmtuitions@gmail.com</a></p>
+              <p className="text-slate-600 mt-2">
+                <a href="mailto:prmtuitions@gmail.com" className="hover:text-gold">prmtuitions@gmail.com</a>
+              </p>
             </div>
+            {/* Working Hours Card */}
             <div className="info-card bg-white p-8 rounded-3xl shadow-sm text-center">
               <div className="flex justify-center mb-4">
                 <div className="bg-navy text-white p-3 rounded-full">
@@ -84,13 +70,14 @@ const Contact = () => {
         </div>
       </section>
 
-      <SectionDivider />
+      {/* 3. MAIN CONTENT SPLIT (FORM & MAP) */}
       <section className="section reveal py-20 bg-white">
         <div className="container">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-start">
+            {/* Left Side: Form */}
             <div className="enquiry-form">
               <h2 className="text-3xl font-bold text-navy mb-6">Send an Enquiry</h2>
-              <form onSubmit={handleSubmit}>
+              <form action="#" method="POST">
                 <div className="space-y-6">
                   <div>
                     <label htmlFor="name" className="sr-only">Name</label>
@@ -116,18 +103,20 @@ const Contact = () => {
                 </div>
               </form>
             </div>
+
+            {/* Right Side: Map */}
             <div className="map-container h-full min-h-[400px] md:min-h-full">
                  <div style={{width: '100%', height: '100%', borderRadius: '20px', overflow: 'hidden'}}>
-          <iframe
-          src="https://www.google.com/maps/embed?pb=!1m14!1m8!1m3!1d262.6126868724491!2d82.93589168748088!3d25.24820930975315!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0xa55c87573a804619%3A0x53197cad0381dd35!2sParam%20Tuition%20Bureau!5e1!3m2!1sen!2sin!4v1770746841201!5m2!1sen!2sin"
-           width="100%"
-           height="100%"
-           style={{ border: 0 }}
-           allowFullScreen=""
-           loading="lazy"
-           referrerPolicy="no-referrer-when-downgrade"
-           title="Param Tuition Bureau - Google Map"
-         ></iframe>
+        <iframe
+          src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3604.834812363198!2d82.90808397409096!3d25.37688192592537!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x398e2c3e86c4f39b%3A0x8c5f53e6d2be4198!2sLathiya%2C%20Varanasi%2C%20Uttar%20Pradesh%20221006!5e0!3m2!1sen!2sin!4v1706436329068!5m2!1sen!2sin"
+          width="100%"
+          height="100%"
+          style={{ border: 0 }}
+          allowFullScreen=""
+          loading="lazy"
+          referrerPolicy="no-referrer-when-downgrade"
+          title="Google Map of Lathiya, Varanasi"
+        ></iframe>
       </div>
             </div>
           </div>

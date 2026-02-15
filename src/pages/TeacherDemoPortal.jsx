@@ -22,33 +22,28 @@ export default function TeacherDemoPortal({ tuitionId, parentLocation }) {
 
   const handleDemoStart = () => {
     setCheckingIn(true);
-    if (typeof navigator !== 'undefined' && navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(async (pos) => {
-        const { latitude, longitude } = pos.coords;
-        const dist = calculateDistance(latitude, longitude, parentLocation.lat, parentLocation.lng);
+    navigator.geolocation.getCurrentPosition(async (pos) => {
+      const { latitude, longitude } = pos.coords;
+      const dist = calculateDistance(latitude, longitude, parentLocation.lat, parentLocation.lng);
 
-        if (dist > 200) { // Must be within 200 meters of parent's house
-          setDistanceError(`Security Alert: You are ${(dist/1000).toFixed(1)}km away. Please reach the parent's gate to start.`);
-          setCheckingIn(false);
-          return;
-        }
-
-        const { error } = await supabase.from('applications')
-          .update({ 
-            demo_check_in_time: new Date(),
-            demo_check_in_lat: latitude,
-            demo_check_in_long: longitude,
-            status: 'demo_started'
-          })
-          .match({ tuition_id: tuitionId });
-
-        if (!error) setIsCheckedIn(true);
+      if (dist > 200) { // Must be within 200 meters of parent's house
+        setDistanceError(`Security Alert: You are ${(dist/1000).toFixed(1)}km away. Please reach the parent's gate to start.`);
         setCheckingIn(false);
-      });
-    } else {
-      setDistanceError('Geolocation is not supported by your browser.');
+        return;
+      }
+
+      const { error } = await supabase.from('applications')
+        .update({ 
+          demo_check_in_time: new Date(),
+          demo_check_in_lat: latitude,
+          demo_check_in_long: longitude,
+          status: 'demo_started'
+        })
+        .match({ tuition_id: tuitionId });
+
+      if (!error) setIsCheckedIn(true);
       setCheckingIn(false);
-    }
+    });
   };
 
   return (

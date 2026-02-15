@@ -12,6 +12,7 @@ const About = () => {
     <div className="about-page">
       <Header />
 
+      {/* 1. LEGACY HERO SECTION */}
       <section className="section reveal bg-white">
         <div className="container" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '40px', alignItems: 'center' }}>
           <div className="legacy-text animate-from-left">
@@ -23,12 +24,13 @@ const About = () => {
               Education is not just our profession—it is our legacy. This tuition bureau was born from a deep-rooted belief that every child deserves the right guidance, care, and quality education. We aim to bring order and trust to the home tuition sector, where parents often struggle to find verified and reliable educators.
             </p>
           </div>
-
+          
           <div className="legacy-photo-container text-center animate-from-right">
+            {/* REPLACE 'parmanand-dwivedi.jpg' with your actual image path */}
             <div style={{ maxWidth: '380px', margin: '0 auto', border: '8px solid var(--gold)', borderRadius: '20px', overflow: 'hidden', boxShadow: '0 20px 40px rgba(0,0,0,0.1)' }}>
-              <img
-                src="/images/parmanand-dubey.jpg"
-                alt="Late Shri Parmanand Dubey Ji"
+              <img 
+                src="/images/parmanand-dubey.jpg" 
+                alt="Late Shri Parmanand Dubey Ji" 
                 style={{ width: '100%', height: 'auto', display: 'block' }}
                 onError={(e) => { e.target.src = "https://placehold.co/400x500?text=Late+Shri+Parmanand+Dubey+Ji"; }}
               />
@@ -40,6 +42,7 @@ const About = () => {
 
       <SectionDivider />
 
+      {/* 2. FOUNDER'S JOURNEY */}
       <section className="section reveal bg-slate-50">
         <div className="container">
           <div className="max-w-3xl mx-auto text-center">
@@ -57,6 +60,7 @@ const About = () => {
         </div>
       </section>
 
+      {/* 3. MISSION & SERVICES */}
       <section className="section reveal">
         <div className="container">
           <h2 className="text-center text-3xl font-black uppercase italic">What We Stand For</h2>
@@ -64,7 +68,7 @@ const About = () => {
           <p className="service-text text-center mt-6 max-w-3xl mx-auto">
             With this emotional foundation, we have built a platform where parents and teachers meet on a foundation of trust.
           </p>
-
+          
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-12">
             <div className="p-8 bg-white rounded-[32px] shadow-sm border border-slate-100">
               <i className="fas fa-user-check text-2xl text-blue-600 mb-4"></i>
@@ -85,6 +89,7 @@ const About = () => {
         </div>
       </section>
 
+      {/* 4. OUR PROMISE */}
       <section className="section reveal bg-slate-50">
         <div className="container">
           <div className="max-w-3xl mx-auto text-center">

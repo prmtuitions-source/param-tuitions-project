@@ -3,8 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../shared/utils/supabaseClient';
 import Header from '../../shared/components/Header';
 import Footer from '../../shared/components/Footer';
-import ReviewGenerator from '../../shared/components/ReviewGenerator';
-import uiNotify from '../../shared/utils/uiNotify';
 
 /**
  * PARAM TUITIONS - ADMIN DASHBOARD (Location Scoped)
@@ -49,6 +47,8 @@ export default function AdminDashboard() {
     nearby: '', 
     mode: "Student's Home",
     board: 'CBSE',
+    mode: "Student's Home",
+    board: 'CBSE',
     days: '6 days/week',
     duration: '1 hr',
     timings: '',
@@ -58,7 +58,6 @@ export default function AdminDashboard() {
     demo_date: ''
   });
   const [toast, setToast] = useState(null);
-  const origin = (typeof globalThis !== 'undefined' && globalThis.location && globalThis.location.origin) ? globalThis.location.origin : '';
   
   // Security & Reports States
   const [bypassAlerts, setBypassAlerts] = useState([]);
@@ -143,7 +142,7 @@ export default function AdminDashboard() {
   ];
 
   useEffect(() => {
-    if (typeof document !== 'undefined') document.title = "Admin Dashboard | Param Tuition Bureau";
+    document.title = "Admin Dashboard | Param Tuition Bureau";
     initAdmin();
     fetchSystemSettings();
   }, []);
@@ -192,7 +191,7 @@ export default function AdminDashboard() {
       const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
       
       if (profile.user_role !== 'admin') {
-        uiNotify.alert("Access Denied: You are not an Admin.");
+        alert("Access Denied: You are not an Admin.");
         return navigate('/');
       }
       
@@ -202,7 +201,7 @@ export default function AdminDashboard() {
       await fetchDemosByDate(new Date().toISOString().split('T')[0], profile.admin_zone);
 
     } catch (e) {
-      // Admin Init Error
+      console.error("Admin Init Error:", e);
     } finally {
       setLoading(false);
     }
@@ -241,7 +240,7 @@ export default function AdminDashboard() {
     // 3. Fetch Inquiries (Tuitions) in Zone
     const { data: inqs } = await supabase
       .from('tuitions')
-      .select('*, parent:profiles(latitude, longitude), applications(id, teacher_id, status, created_at, teacher:profiles(id, full_name, phone_number, email, latitude, longitude, teacher_details(*)))')
+      .select('*, parent:profiles!parent_id(latitude, longitude), applications(id, teacher_id, status, created_at, teacher:profiles(id, full_name, phone_number, email, latitude, longitude, teacher_details(*)))')
       .eq('admin_zone', zone)
       .in('status', ['open', 'demo_allotted', 'DEMO_SCHEDULED', 'DEMO_POSTPONED', 'booked', 'BOOKED', 'demo_started'])
       .order('created_at', { ascending: false });
@@ -330,7 +329,7 @@ export default function AdminDashboard() {
       .eq('tuition.admin_zone', zone) // SCOPED QUERY
       .order('demo_time', { ascending: true });
     
-    if (error) {/* Error fetching demos */}
+    if (error) console.error('Error fetching demos:', error);
     setDemos(data || []);
   }
 
@@ -338,17 +337,17 @@ export default function AdminDashboard() {
 
   const handleVerifyTeacher = async (teacher) => {
     const details = Array.isArray(teacher.teacher_details) ? teacher.teacher_details[0] : teacher.teacher_details;
-    if (!details) return uiNotify.alert("Cannot verify: Registration incomplete.");
+    if (!details) return alert("Cannot verify: Registration incomplete.");
 
     // NEW: Check setup_completed to ensure documents are uploaded
     if (!details.setup_completed && !details.is_verified) {
-            if (!uiNotify.confirm("⚠️ SYSTEM WARNING: This teacher's profile is marked as INCOMPLETE (missing documents or details).\n\nDo you want to FORCE VERIFY them anyway?")) {
+        if (!window.confirm("⚠️ SYSTEM WARNING: This teacher's profile is marked as INCOMPLETE (missing documents or details).\n\nDo you want to FORCE VERIFY them anyway?")) {
             return;
         }
     }
     
     const currentStatus = details.is_verified;
-    if (!uiNotify.confirm(`Are you sure you want to ${currentStatus ? 'UNVERIFY' : 'VERIFY'} ${teacher.full_name}?`)) return;
+    if (!window.confirm(`Are you sure you want to ${currentStatus ? 'UNVERIFY' : 'VERIFY'} ${teacher.full_name}?`)) return;
 
     const { error } = await supabase
       .from('teacher_details')
@@ -358,31 +357,31 @@ export default function AdminDashboard() {
       })
       .eq('id', teacher.id);
 
-    if (error) uiNotify.alert("Error: " + error.message);
+    if (error) alert("Error: " + error.message);
     else {
       fetchScopedData(adminProfile.admin_zone);
     }
   };
 
   const handleAddBlacklist = async () => {
-    if (!newBlacklistEntry.phone && !newBlacklistEntry.email) return uiNotify.alert("Either Phone or Email is required.");
+    if (!newBlacklistEntry.phone && !newBlacklistEntry.email) return alert("Either Phone or Email is required.");
     const { error } = await supabase.from('blacklist').insert({ ...newBlacklistEntry, added_by: adminProfile?.admin_zone });
-    if (error) uiNotify.alert("Error adding to blacklist: " + error.message);
+    if (error) alert("Error adding to blacklist: " + error.message);
     else {
-      uiNotify.alert("User blacklisted successfully.");
+      alert("User blacklisted successfully.");
       setNewBlacklistEntry({ role: 'teacher', phone: '', email: '', location: '', reason: '' });
       fetchScopedData(adminProfile.admin_zone);
     }
   };
 
   const handleDeleteBlacklist = async (id) => {
-    if (!uiNotify.confirm("Remove this user from blacklist?")) return;
+    if (!window.confirm("Remove this user from blacklist?")) return;
     await supabase.from('blacklist').delete().eq('id', id);
     fetchScopedData(adminProfile.admin_zone);
   };
 
   const handleQuickBlacklist = async (user, role) => {
-    const reason = uiNotify.prompt(`Confirm Blacklist for ${user.full_name}? Enter reason:`, "Fraud/Policy Violation");
+    const reason = prompt(`Confirm Blacklist for ${user.full_name}? Enter reason:`, "Fraud/Policy Violation");
     if (!reason) return;
 
     const { error } = await supabase.from('blacklist').insert({
@@ -394,9 +393,9 @@ export default function AdminDashboard() {
       added_by: adminProfile?.admin_zone
     });
 
-    if (error) uiNotify.alert("Error adding to blacklist: " + error.message);
+    if (error) alert("Error adding to blacklist: " + error.message);
     else {
-      uiNotify.alert("User blacklisted successfully.");
+      alert("User blacklisted successfully.");
       fetchScopedData(adminProfile.admin_zone);
     }
   };
@@ -420,7 +419,7 @@ export default function AdminDashboard() {
   };
 
   const handleConvertToTuition = async () => {
-    if (!verifiedLeadData.fee || !verifiedLeadData.school) return uiNotify.alert("Verify Fee and School first.");
+    if (!verifiedLeadData.fee || !verifiedLeadData.school) return alert("Verify Fee and School first.");
     
     setLoading(true);
 
@@ -448,7 +447,7 @@ export default function AdminDashboard() {
       }
 
       if (!finalParentId) {
-        if (!uiNotify.confirm("No registered Parent account found for this phone number.\n\nDo you want to proceed anyway? (The tuition will be created without a linked parent account)")) {
+        if (!window.confirm("No registered Parent account found for this phone number.\n\nDo you want to proceed anyway? (The tuition will be created without a linked parent account)")) {
           setLoading(false);
           return;
         }
@@ -501,28 +500,28 @@ ${assignedTN}
 ❖Fixed Demo: ${verifiedLeadData.demo_date ? new Date(verifiedLeadData.demo_date).toLocaleDateString('en-IN') : 'Flexible'}
 ❖Mode: ${verifiedLeadData.mode}
 ❖Requirement: ${verifiedLeadData.demands?.join(', ') || ''}
-❖Apply Here: ${origin}/job-board?tn=${assignedTN}`.trim();
+❖Apply Here: ${window.location.origin}/job-board?tn=${assignedTN}`.trim();
       
       // Copy to Clipboard
       try {
-        await navigator.clipboard?.writeText?.(jobCard);
-      } catch (err) { /* Clipboard copy failed */ }
+        await navigator.clipboard.writeText(jobCard);
+      } catch (err) { console.error("Clipboard copy failed", err); }
 
-      (typeof globalThis !== 'undefined' && typeof globalThis.open === 'function') ? globalThis.open(`https://wa.me/?text=${encodeURIComponent(jobCard)}`, '_blank', 'noopener,noreferrer') : (typeof globalThis !== 'undefined' && globalThis.location ? (globalThis.location.href = `https://wa.me/?text=${encodeURIComponent(jobCard)}`) : null);
+      window.open(`https://wa.me/?text=${encodeURIComponent(jobCard)}`, '_blank');
       
       setToast({ title: 'Job Posted!', message: 'Text copied to clipboard.' });
       setShowConvertModal(false);
       fetchScopedData(adminProfile.admin_zone);
 
     } catch (err) {
-      uiNotify.alert(`Operation Failed: ${err.message}`);
+      alert(`Operation Failed: ${err.message}`);
     } finally {
       setLoading(false);
     }
   };
 
   const handleAddManualLead = async () => {
-    if (!manualLead.name || !manualLead.phone || !manualLead.location) return uiNotify.alert("Name, Phone and Location are required");
+    if (!manualLead.name || !manualLead.phone || !manualLead.location) return alert("Name, Phone and Location are required");
     setLoading(true);
 
     // NEW: Try to find existing parent account to link immediately
@@ -549,9 +548,9 @@ ${assignedTN}
       status: 'pending_call'
     });
     
-    if (error) uiNotify.alert(error.message);
+    if (error) alert(error.message);
     else {
-      uiNotify.alert(parentId ? "Lead added and linked to existing Parent account!" : "Lead added manually! (No matching parent account found)");
+      alert(parentId ? "Lead added and linked to existing Parent account!" : "Lead added manually! (No matching parent account found)");
       setShowManualLeadModal(false);
       setManualLead({ name: '', phone: '', location: '', class: '', subject: '' });
       fetchScopedData(adminProfile.admin_zone); // Refresh leads
@@ -560,39 +559,39 @@ ${assignedTN}
   };
 
   const handleBookTuition = async (applicationId, tuitionId, teacher, tuitionNo) => {
-    if (!uiNotify.confirm(`Confirm booking for ${teacher.full_name}? This will share parent contact details.`)) return;
+    if (!window.confirm(`Confirm booking for ${teacher.full_name}? This will share parent contact details.`)) return;
     
     const { error: appError } = await supabase.from('applications').update({ status: 'demo_allotted' }).eq('id', applicationId);
     const { error: tuiError } = await supabase.from('tuitions').update({ status: 'demo_allotted' }).eq('id', tuitionId);
     
     if (!appError && !tuiError) {
-      uiNotify.alert(`Tuition ${tuitionNo} BOOKED! Parent contact shared with ${teacher.full_name}.`);
+      alert(`Tuition ${tuitionNo} BOOKED! Parent contact shared with ${teacher.full_name}.`);
       fetchScopedData(adminProfile.admin_zone);
     } else {
-      // Booking Error
-      uiNotify.alert(`Failed to book tuition. \nApp Error: ${appError?.message}\nTuition Error: ${tuiError?.message}`);
+      console.error("Booking Error:", appError, tuiError);
+      alert(`Failed to book tuition. \nApp Error: ${appError?.message}\nTuition Error: ${tuiError?.message}`);
     }
   };
 
   const handleConfirmTuition = async (applicationId, tuitionId) => {
-    if (!uiNotify.confirm("Confirm this tuition officially? This will mark it as 'Confirmed'.")) return;
+    if (!window.confirm("Confirm this tuition officially? This will mark it as 'Confirmed'.")) return;
     setLoading(true);
     try {
         const { error: appError } = await supabase.from('applications').update({ status: 'confirmed', demo_completed_at: new Date() }).eq('id', applicationId);
         if (appError) throw appError;
         const { error: tuiError } = await supabase.from('tuitions').update({ status: 'confirmed' }).eq('id', tuitionId);
         if (tuiError) throw tuiError;
-        uiNotify.alert("Tuition Confirmed Successfully!");
+        alert("Tuition Confirmed Successfully!");
         fetchScopedData(adminProfile.admin_zone);
     } catch (e) {
-        uiNotify.alert("Error: " + e.message);
+        alert("Error: " + e.message);
     } finally {
         setLoading(false);
     }
   };
 
   const handleReassignTeacher = async (applicationId, tuitionId) => {
-    if (!uiNotify.confirm("Are you sure you want to re-assign this tuition? This will reject the current teacher and open the tuition for new applications.")) return;
+    if (!window.confirm("Are you sure you want to re-assign this tuition? This will reject the current teacher and open the tuition for new applications.")) return;
     
     setLoading(true);
     try {
@@ -600,10 +599,10 @@ ${assignedTN}
         if (appError) throw appError;
         const { error: tuiError } = await supabase.from('tuitions').update({ status: 'open' }).eq('id', tuitionId);
         if (tuiError) throw tuiError;
-        uiNotify.alert("Teacher unassigned. Tuition is now OPEN.");
+        alert("Teacher unassigned. Tuition is now OPEN.");
         fetchScopedData(adminProfile.admin_zone);
     } catch (e) {
-        uiNotify.alert("Error: " + e.message);
+        alert("Error: " + e.message);
     } finally {
         setLoading(false);
     }
@@ -627,7 +626,7 @@ ${assignedTN}
       
       openDemoModal(mode, data);
     } catch (err) {
-      uiNotify.alert(err.message);
+      alert(err.message);
     } finally {
       setLoading(false);
     }
@@ -663,7 +662,7 @@ ${assignedTN}
         
         await supabase.from('tuitions').update({ status: 'DEMO_SCHEDULED' }).eq('id', selectedDemoItem.tuitionId);
         await supabase.from('applications').update({ status: 'DEMO_SCHEDULED' }).eq('id', selectedDemoItem.applicationId);
-        uiNotify.alert("Demo Scheduled!");
+        alert("Demo Scheduled!");
 
       } else if (demoModalMode === 'postpone') {
         const { error } = await supabase.from('demos').update({
@@ -684,7 +683,7 @@ ${assignedTN}
           .update({ status: 'DEMO_POSTPONED' })
           .eq('id', selectedDemoItem.tuition_id);
 
-        uiNotify.alert("Demo Postponed!");
+        alert("Demo Postponed!");
 
       } else if (demoModalMode === 'status') {
         const { error } = await supabase.from('demos').update({
@@ -703,13 +702,13 @@ ${assignedTN}
           .update({ status: demoForm.status })
           .eq('id', selectedDemoItem.tuition_id);
 
-        uiNotify.alert("Demo Status Updated!");
+        alert("Demo Status Updated!");
       }
 
       setShowDemoModal(false);
       fetchScopedData(adminProfile.admin_zone);
       fetchDemosByDate(demoFilterDate, adminProfile.admin_zone);
-    } catch (e) { uiNotify.alert(e.message); }
+    } catch (e) { alert(e.message); }
     setLoading(false);
   };
 
@@ -730,7 +729,7 @@ ${assignedTN}
       // CRITICAL: Filter matches to only show teachers in Admin's Zone
       const scopedMatches = data ? data.filter(t => t.admin_zone === adminProfile.admin_zone) : [];
       setMatchedTeachers(scopedMatches);
-    } catch (err) { /* Match error */ }
+    } catch (err) { console.error(err); }
     setIsMatching(false);
   }
 
@@ -1005,187 +1004,540 @@ ${assignedTN}
                   <h2 className="text-4xl font-black">{demos.length}</h2>
                 </div>
               </div>
-              
-              {/* REVIEW GENERATOR WIDGET */}
-              <div className="mt-6">
-                <ReviewGenerator />
-              </div>
             </div>
           )}
 
-          {/* TAB: LEADS */}
+          {/* TAB: NEW LEADS */}
           {activeTab === 'leads' && (
-            <div>
-              <h2 className="text-2xl font-black">New Leads ({leads.length})</h2>
-              <div className="mt-4 grid gap-4">
-                {leads.length === 0 && <div className="p-6 bg-white rounded-xl">No pending leads.</div>}
-                {leads.map(l => (
-                  <div key={l.id} className="p-4 bg-white rounded-xl shadow-sm flex justify-between items-center">
+            <section className="bg-white rounded-[40px] shadow-sm border overflow-hidden">
+              <div className="p-6 bg-orange-500 text-white flex justify-between items-center">
+                <h3 className="text-xs font-black uppercase italic tracking-widest">Incoming Leads ({adminProfile?.admin_zone})</h3>
+                <span className="text-[10px] font-bold bg-white text-orange-600 px-3 py-1 rounded-full">{leads.length} New</span>
+                <button onClick={() => setShowManualLeadModal(true)} className="bg-slate-900 text-white px-3 py-1 rounded-lg text-[10px] font-black uppercase ml-4">+ Add Manual</button>
+              </div>
+              <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                {leads.map(lead => (
+                  <div key={lead.id} className="p-6 bg-slate-50 rounded-3xl border border-slate-100 flex justify-between items-center group hover:border-orange-300 transition-all">
                     <div>
-                      <div className="font-bold">{l.raw_data?.parent_name || l.raw_data?.phone_number}</div>
-                      <div className="text-sm text-slate-500">{l.raw_data?.location_name} • {l.raw_data?.student_class} • {l.raw_data?.subject}</div>
-                    </div>
-                    <div className="flex gap-2">
-                      <button onClick={() => { setSelectedLead(l); setShowConvertModal(true); }} className="px-3 py-2 bg-blue-600 text-white rounded">Post Tuition</button>
-                      <button onClick={() => { setSelectedLead(l); setShowManualLeadModal(true); }} className="px-3 py-2 border rounded">Link / Edit</button>
+                      <p className="text-xs font-black text-slate-400 uppercase tracking-tighter mb-1">{lead.raw_data.location_name}</p>
+                      <h4 className="font-black text-slate-800 text-lg uppercase leading-none">{lead.raw_data.subject}</h4>
+                      <div className="flex gap-2 mt-3">
+                        <a href={`tel:${lead.raw_data.phone_number}`} className="bg-white text-blue-600 px-3 py-1 rounded-lg text-[10px] font-black uppercase border shadow-sm">Call Parent</a>
+                        <button onClick={() => { setSelectedLead(lead); setShowConvertModal(true); }} className="bg-slate-900 text-white px-3 py-1 rounded-lg text-[10px] font-black uppercase">Process Lead</button>
+                      </div>
                     </div>
                   </div>
                 ))}
+                {leads.length === 0 && <div className="col-span-2 text-center p-10 text-slate-400 italic text-xs uppercase font-bold tracking-widest opacity-50">No new leads for your zone.</div>}
               </div>
-            </div>
+            </section>
           )}
 
           {/* TAB: INQUIRY & BOOKING */}
           {activeTab === 'allot' && (
-            <div>
-              <h2 className="text-2xl font-black">Inquiry & Booking ({pendingInquiries.length})</h2>
-              <div className="mt-4 grid gap-4">
-                {pendingInquiries.length === 0 && <div className="p-6 bg-white rounded-xl">No open inquiries.</div>}
-                {pendingInquiries.map(t => (
-                  <div key={t.id} className="p-4 bg-white rounded-xl shadow-sm">
-                    <div className="flex justify-between">
-                      <div>
-                        <div className="font-bold">Tuition #{t.tuition_no || t.id} — {t.subject}</div>
-                        <div className="text-sm text-slate-500">{t.location_name} • {t.student_class}</div>
-                      </div>
-                      <div className="flex gap-2">
-                        <button className="px-3 py-2 bg-green-600 text-white rounded" onClick={() => uiNotify.alert('Open booking flow')}>Book</button>
-                        <button className="px-3 py-2 border rounded" onClick={() => uiNotify.alert('Open applications')}>Applications</button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+            <div className="space-y-6">
+              <h2 className="text-3xl font-bold italic tracking-tighter uppercase">Inquiry & Booking</h2>
+              {pendingInquiries.map(inq => {
+                // Format Tuition Details for Display/WhatsApp
+                const tuitionDetailsText = `
+${inq.tuition_no || 'TN-PENDING'}
+❖Main Location: ${inq.location_name}
+❖Nearby: ${inq.nearby_landmark || 'N/A'}
+❖School: ${inq.school_name || 'N/A'}
+❖Medium: ${inq.medium || 'N/A'}
+❖Grade: ${inq.student_class}
+❖Subject: ${inq.subject}
+❖Days: ${inq.days_per_week || '6 Days/Week'}
+❖Duration: ${inq.class_duration || '1 hr'}
+❖Timing: ${inq.preferred_timing || 'N/A'}
+❖Gender: ${inq.gender_preference || 'Any'}
+❖Fee: ${inq.fee_amount || 'N/A'}
+❖Mode : ${inq.teaching_mode || 'Student Home'}
+❖Requirement: ${inq.specific_demands ? (Array.isArray(inq.specific_demands) ? inq.specific_demands.join(', ') : inq.specific_demands) : 'Experienced'}
+❖Call/Whatsapp: https://wa.me/91${adminPhones[inq.admin_zone] || adminPhones['Admin 1']}
+`.trim();
 
-          {/* TAB: DEMOS */}
-          {activeTab === 'demos' && (
-            <div>
-              <h2 className="text-2xl font-black">Demo Manager ({demos.length})</h2>
-              <div className="mt-4 grid gap-4">
-                {demos.length === 0 && <div className="p-6 bg-white rounded-xl">No demos for selected date.</div>}
-                {demos.map(d => (
-                  <div key={d.id} className="p-4 bg-white rounded-xl shadow-sm flex justify-between">
-                    <div>
-                      <div className="font-bold">{d.tuition?.subject || 'Demo'}</div>
-                      <div className="text-sm text-slate-500">{d.demo_date} {d.demo_time}</div>
+                return (
+                <div key={inq.id} className="bg-white p-6 rounded-[32px] shadow-sm border border-slate-100 mb-4">
+                  <div className="flex justify-between items-start mb-4">
+                    <div className="flex-1">
+                      <h3 className="text-xl font-black uppercase italic">{inq.subject} - {inq.student_class} <span className="text-slate-400 text-sm">({inq.tuition_no})</span></h3>
+                      <p className="text-blue-600 font-bold uppercase text-[10px]">{inq.location_name}</p>
+                      
+                      {/* Expandable Tuition Details */}
+                      <details className="mt-2">
+                        <summary className="text-[10px] font-bold text-slate-500 cursor-pointer hover:text-blue-600">View Tuition Card (WhatsApp Format)</summary>
+                        <pre className="mt-2 p-3 bg-slate-50 rounded-xl text-[10px] text-slate-600 whitespace-pre-wrap border border-slate-200">
+                          {tuitionDetailsText}
+                        </pre>
+                        <button 
+                          onClick={() => navigator.clipboard.writeText(tuitionDetailsText).then(() => alert('Copied!'))}
+                          className="mt-2 text-[9px] bg-blue-50 text-blue-600 px-2 py-1 rounded hover:bg-blue-100 font-bold uppercase"
+                        >Copy Text</button>
+                      </details>
                     </div>
-                    <div className="flex gap-2">
-                      <button onClick={() => openDemoModal('status', d)} className="px-3 py-2 bg-blue-600 text-white rounded">Update</button>
-                    </div>
+                    <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase ${inq.status === 'open' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>{inq.status}</span>
                   </div>
-                ))}
-              </div>
-            </div>
-          )}
 
-          {/* TAB: MATCHING */}
-          {activeTab === 'match' && (
-            <div>
-              <h2 className="text-2xl font-black">Matching Centre</h2>
-              <div className="mt-4">
-                <button onClick={runTeacherMatch} className="px-4 py-2 bg-blue-600 text-white rounded">Run Match</button>
-                <div className="mt-4 grid gap-3">
-                  {isMatching && <div>Matching in progress…</div>}
-                  {matchedTeachers.map(t => (
-                    <div key={t.id} className="p-3 bg-white rounded shadow-sm">{t.full_name || t.name} — {t.admin_zone}</div>
-                  ))}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {inq.applications?.map(app => {
+                      const teacher = app.teacher || {};
+                      const d = Array.isArray(teacher?.teacher_details) ? teacher.teacher_details[0] : teacher?.teacher_details || {};
+                      
+                      // Robust parent check and Map URL generation
+                      const parent = Array.isArray(inq.parent) ? inq.parent[0] : inq.parent;
+                      const distance = calculateDistance(parent?.latitude, parent?.longitude, teacher?.latitude, teacher?.longitude);
+                      
+                      let mapUrl = null;
+                      if (teacher?.latitude && teacher?.longitude && parent?.latitude && parent?.longitude) {
+                        mapUrl = `https://www.google.com/maps/dir/?api=1&origin=${teacher.latitude},${teacher.longitude}&destination=${parent.latitude},${parent.longitude}`;
+                      } else if (teacher?.latitude && teacher?.longitude) {
+                        mapUrl = `https://www.google.com/maps/search/?api=1&query=${teacher.latitude},${teacher.longitude}`;
+                      } else if (parent?.latitude && parent?.longitude) {
+                        mapUrl = `https://www.google.com/maps/search/?api=1&query=${parent.latitude},${parent.longitude}`;
+                      }
+                      
+                      // Check Fee Status from Ledger
+                      const teacherLedger = ledgerData.filter(l => l.teacher_id === teacher?.id);
+                      const pendingFees = teacherLedger.filter(l => l.payment_status === 'pending').length;
+                      const feeStatus = pendingFees > 0 ? `${pendingFees} Pending` : 'Clear';
+
+                      const teacherDetailsText = `
+Aadhar Number : ${d.aadhaar_number || 'N/A'}
+Full Name : ${teacher.full_name || 'N/A'}
+Mobile Number : ${teacher.phone_number || 'N/A'}
+Timestamp : ${new Date(app.created_at).toLocaleString('en-GB')}
+Email Address : ${teacher.email || 'N/A'}
+Fathers Name : ${d.father_name || 'N/A'}
+Date Of Birth : ${d.date_of_birth || 'N/A'}
+Gender : ${d.gender || 'N/A'}
+Religion : ${d.religion || 'N/A'}
+Category : ${d.category || 'N/A'}
+Temporary Address : ${d.temporary_address || 'N/A'}
+Permanent Address : ${d.permanent_address || 'N/A'}
+Class X Board : ${d.class_x_board || 'N/A'}
+Name Of School in Class 10 : ${d.class_10_school || 'N/A'}
+Marks Obtained In Class 10 ( approx ) : ${d.class_10_marks || 'N/A'}
+Passing Year Class 10 : ${d.class_10_year || 'N/A'}
+Class 12 Stream : ${d.class_12_subject || 'N/A'}
+Name School in Class 12 : ${d.class_12_school || 'N/A'}
+Marks Obtained In Class 12 ( approx ) : ${d.class_12_marks || 'N/A'}
+Passing Year Class 12 : ${d.class_12_year || 'N/A'}
+Graduation : ${d.graduation_subject || 'N/A'}
+Graduation Status : ${d.graduation_status || 'N/A'}
+Graduation College : ${d.graduation_college || 'N/A'}
+Boards You Can Take? : ${d.boards_can_teach || 'N/A'}
+Experience : ${d.years_of_experience || 'N/A'}
+Subjects You Can Take : ${d.subjects_can_teach || 'N/A'}
+Classes You Can Take : ${d.preferred_classes || 'N/A'}
+Teaching Mode : ${d.teaching_mode || 'N/A'}
+Marital Status : ${d.marital_status || 'N/A'}
+Speaking English? : ${d.english_proficiency || 'N/A'}
+How do you usually travel? : ${d.travel_mode || 'N/A'}
+Distance from Parent : ${distance}`.trim();
+
+                      return (
+                      <div key={app.id} className="p-4 bg-slate-50 rounded-2xl border flex flex-col gap-3">
+                        <div>
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <span className="font-bold text-sm block text-slate-800">{teacher?.full_name}</span>
+                              <span className="text-[10px] text-slate-500 uppercase font-bold">{app.status}</span>
+                            </div>
+                            <div className="text-right">
+                               <span className={`text-[9px] font-black px-2 py-0.5 rounded uppercase ${pendingFees > 0 ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'}`}>Fee: {feeStatus}</span>
+                               {mapUrl ? (
+                                 <a href={mapUrl} target="_blank" rel="noreferrer" className="text-[9px] font-bold text-blue-500 mt-1 hover:underline block">
+                                   Dist: {distance} 🗺️
+                                 </a>
+                               ) : (
+                                 <div className="text-[9px] font-bold text-slate-400 mt-1">Dist: {distance}</div>
+                               )}
+                            </div>
+                          </div>
+                          
+                          <details className="mt-2">
+                            <summary className="text-[9px] font-bold text-blue-600 cursor-pointer uppercase">View Full Teacher Details</summary>
+                            <pre className="mt-2 p-2 bg-white rounded border text-[9px] text-slate-600 whitespace-pre-wrap h-32 overflow-y-auto">
+                              {teacherDetailsText}
+                            </pre>
+                          </details>
+                        </div>
+                        
+                        <div className="flex justify-end gap-2 mt-2 pt-2 border-t border-slate-200">
+                        {app.status === 'applied' && (
+                          <button onClick={() => handleBookTuition(app.id, inq.id, teacher, inq.tuition_no)} className="bg-slate-900 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase w-full">Book Teacher</button>
+                        )}
+                        {(app.status === 'BOOKED' || app.status === 'booked' || app.status === 'demo_allotted') && (
+                          <button 
+                            onClick={() => openDemoModal('schedule', { tuitionId: inq.id, teacherId: app.teacher_id, parentId: inq.parent_id, applicationId: app.id })} 
+                            className="bg-blue-600 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase w-full"
+                          >Schedule Demo</button>
+                        )}
+                        {(app.status === 'DEMO_SCHEDULED' || app.status === 'DEMO_POSTPONED') && (
+                          <div className="flex gap-2 mb-2 w-full">
+                             <button onClick={() => fetchAndManageDemo('postpone', app, inq)} className="flex-1 bg-yellow-100 text-yellow-700 px-2 py-2 rounded-xl text-[10px] font-black uppercase hover:bg-yellow-200">Postpone Demo</button>
+                             <button onClick={() => fetchAndManageDemo('status', app, inq)} className="flex-1 bg-blue-100 text-blue-700 px-2 py-2 rounded-xl text-[10px] font-black uppercase hover:bg-blue-200">Update Status</button>
+                          </div>
+                        )}
+                        {['demo_allotted', 'DEMO_SCHEDULED', 'DEMO_POSTPONED', 'DEMO_COMPLETED', 'booked', 'BOOKED', 'demo_started'].includes(app.status) && (
+                          <div className="flex gap-2 mt-2">
+                            <button onClick={() => handleReassignTeacher(app.id, inq.id)} className="flex-1 bg-red-100 text-red-600 px-2 py-2 rounded-xl text-[10px] font-black uppercase hover:bg-red-200">Re-assign</button>
+                            <button onClick={() => handleConfirmTuition(app.id, inq.id)} className="flex-[2] bg-green-600 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase hover:bg-green-700">Confirm</button>
+                          </div>
+                        )}
+                        </div>
+                      </div>
+                    );
+                    })}
+                  </div>
                 </div>
+              );
+              })}
+            </div>
+          )}
+
+          {/* TAB: DEMO MANAGER */}
+          {activeTab === 'demos' && (
+            <div className="space-y-6">
+              <div className="flex justify-between items-center">
+                <h2 className="text-3xl font-black uppercase italic tracking-tighter">Demo Manager</h2>
+                <input type="date" value={demoFilterDate} onChange={(e) => fetchDemosByDate(e.target.value)} className="p-3 border rounded-xl font-bold text-sm" />
+              </div>
+              <div className="bg-white rounded-[40px] shadow-sm border overflow-hidden">
+                <table className="w-full text-left">
+                  <thead className="bg-slate-900 text-white text-[10px] font-black uppercase">
+                    <tr>
+                      <th className="p-4">Time</th>
+                      <th className="p-4">Teacher</th>
+                      <th className="p-4">Parent</th>
+                      <th className="p-4">Subject</th>
+                      <th className="p-4">Status</th>
+                      <th className="p-4 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {demos.map(d => (
+                      <tr key={d.id} className="border-b hover:bg-slate-50">
+                        <td className="p-4 font-bold text-xs">{d.demo_time}</td>
+                        <td className="p-4 font-bold text-sm">{d.teacher?.full_name}</td>
+                        <td className="p-4 text-xs">{d.parent?.full_name}</td>
+                        <td className="p-4 text-xs font-bold text-slate-600">{d.tuition?.subject}</td>
+                        <td className="p-4"><span className="px-2 py-1 rounded text-[9px] font-black uppercase bg-slate-100">{d.status}</span></td>
+                        <td className="p-4 text-right flex justify-end gap-2">
+                          <button onClick={() => openDemoModal('postpone', d)} className="text-blue-600 font-bold text-[10px] uppercase hover:underline">Postpone</button>
+                          <button onClick={() => openDemoModal('status', d)} className="text-slate-600 font-bold text-[10px] uppercase hover:underline">Update</button>
+                        </td>
+                      </tr>
+                    ))}
+                    {demos.length === 0 && <tr><td colSpan="6" className="p-8 text-center text-slate-400 italic text-xs">No demos found for this date in your zone.</td></tr>}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* TAB: MATCHING CENTRE */}
+          {activeTab === 'match' && (
+            <div className="space-y-6">
+              <h2 className="text-3xl font-black uppercase italic tracking-tighter">Matching Centre</h2>
+              <div className="bg-white p-8 rounded-[40px] shadow-sm border">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                  <select className="p-3 bg-slate-50 rounded-xl font-bold text-xs" onChange={(e) => setMatchFilters({...matchFilters, gender: e.target.value})}>
+                    <option value="">Any Gender</option>
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
+                  </select>
+                  <select className="p-3 bg-slate-50 rounded-xl font-bold text-xs" onChange={(e) => setMatchFilters({...matchFilters, board: e.target.value})}>
+                    <option value="">Any Board</option>
+                    <option value="CBSE">CBSE</option>
+                    <option value="ICSE">ICSE</option>
+                  </select>
+                  <input type="number" placeholder="Min Exp (Yrs)" className="p-3 bg-slate-50 rounded-xl font-bold text-xs" onChange={(e) => setMatchFilters({...matchFilters, minExp: parseInt(e.target.value)})} />
+                  <button onClick={runTeacherMatch} className="bg-blue-600 text-white font-black rounded-xl text-xs uppercase tracking-widest">{isMatching ? 'Searching...' : 'Find Teachers'}</button>
+                </div>
+                <div className="space-y-3">
+                  {matchedTeachers.map(t => (
+                    <div key={t.id} className="p-4 bg-slate-50 rounded-2xl border flex justify-between items-center">
+                      <div>
+                        <p className="font-black text-slate-800">{t.full_name}</p>
+                        <p className="text-[10px] text-slate-400 font-bold uppercase">{t.experience_years} Yrs Exp • {t.admin_zone}</p>
+                      </div>
+                      <button className="bg-slate-900 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase">Assign</button>
+                    </div>
+                  ))}
+                  {matchedTeachers.length === 0 && !isMatching && <p className="text-center text-slate-400 italic text-xs">No teachers found in your zone matching criteria.</p>}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB: SECURITY AUDIT */}
+          {activeTab === 'security' && (
+            <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
+              <section className="bg-white rounded-[40px] shadow-sm border-2 border-red-100 overflow-hidden">
+                  <div className="bg-red-600 p-4 text-white font-black uppercase text-[10px] tracking-widest flex justify-between items-center italic">
+                    <span>Suspicion Audit: Case Cancellations</span>
+                    <span className="text-[9px] bg-white text-red-600 px-2 py-0.5 rounded">Zone: {adminProfile?.admin_zone}</span>
+                  </div>
+                  <div className="p-0">
+                    <table className="w-full text-left">
+                       <thead>
+                          <tr className="text-[10px] font-black text-slate-400 uppercase border-b bg-slate-50">
+                             <th className="p-6">Tuition</th>
+                             <th className="p-6">Reason</th>
+                             <th className="p-6">Proof</th>
+                             <th className="p-6 text-right">Action</th>
+                          </tr>
+                       </thead>
+                       <tbody>
+                          {suspiciousCancellations.map((log) => (
+                             <tr key={log.id} className="border-b last:border-0 hover:bg-red-50 transition">
+                                <td className="p-6">
+                                   <p className="font-bold text-slate-800 text-sm">{log.tuition?.subject}</p>
+                                   <p className="text-[10px] text-slate-400 uppercase tracking-tighter">{log.tuition?.location_name}</p>
+                                </td>
+                                <td className="p-6">
+                                   <p className="text-xs italic text-slate-600 leading-relaxed">"{log.reason}"</p>
+                                </td>
+                                <td className="p-6">
+                                   {log.voice_note_url ? (
+                                     <audio controls className="h-8 w-32 scale-90 origin-left">
+                                       <source src={log.voice_note_url} type="audio/ogg" />
+                                     </audio>
+                                   ) : <span className="text-[9px] text-slate-300 font-bold uppercase">No Audio</span>}
+                                </td>
+                                <td className="p-6 text-right">
+                                   <button onClick={() => window.open(`https://wa.me/91${log.tuition?.parent?.phone_number}`)} className="bg-slate-900 text-white px-3 py-1 rounded-lg text-[10px] font-black uppercase">Audit Call</button>
+                                </td>
+                             </tr>
+                          ))}
+                          {suspiciousCancellations.length === 0 && <tr><td colSpan="4" className="p-6 text-center text-slate-400 text-xs italic">No suspicious activity detected in your zone.</td></tr>}
+                       </tbody>
+                    </table>
+                  </div>
+              </section>
+
+              <section className="bg-white rounded-[40px] shadow-sm border-2 border-slate-900 overflow-hidden">
+                 <div className="bg-slate-900 p-4 text-white font-black uppercase text-[10px] tracking-widest">GPS Proximity Alerts (My Teachers)</div>
+                 <div className="p-6">
+                    {bypassAlerts.length > 0 ? (
+                      <table className="w-full text-left">
+                         <thead>
+                            <tr className="text-[10px] font-black text-slate-400 uppercase border-b pb-4">
+                               <th className="pb-4">Teacher</th>
+                               <th className="pb-4">Status</th>
+                               <th className="pb-4">Distance</th>
+                               <th className="pb-4 text-right">Action</th>
+                            </tr>
+                         </thead>
+                         <tbody>
+                            {bypassAlerts.map((alert, i) => (
+                               <tr key={i} className="border-b last:border-0 hover:bg-red-50 transition">
+                                  <td className="py-4 font-black text-slate-800 text-sm">{alert.teacher_name}</td>
+                                  <td className="py-4"><span className="bg-red-100 text-red-700 px-3 py-1 rounded-full text-[9px] font-black uppercase">{alert.official_status}</span></td>
+                                  <td className="py-4 text-xs font-bold text-slate-600">{alert.distance_meters}m Away</td>
+                                  <td className="py-4 text-right">
+                                     <button onClick={() => window.open(`https://wa.me/91${alert.teacher_phone}`)} className="bg-slate-900 text-white px-3 py-1 rounded-lg text-[10px] font-black uppercase">Check</button>
+                                  </td>
+                               </tr>
+                            ))}
+                         </tbody>
+                      </table>
+                    ) : <p className="text-center text-slate-400 text-xs italic">All teachers are within range.</p>}
+                 </div>
+              </section>
+            </div>
+          )}
+
+          {/* TAB: MONTHLY REPORTS */}
+          {activeTab === 'reports' && (
+            <div className="space-y-6">
+              <h2 className="text-3xl font-black uppercase italic tracking-tighter">Monthly Performance</h2>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="bg-blue-600 text-white p-8 rounded-3xl shadow-xl">
+                  <p className="text-blue-100 text-xs font-bold uppercase tracking-widest">Zone Revenue</p>
+                  <h2 className="text-4xl font-black mt-2">₹{reportData.reduce((acc, curr) => acc + Number(curr.total_revenue), 0).toLocaleString()}</h2>
+                </div>
+                <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-200">
+                  <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">Confirmed Tuitions</p>
+                  <h2 className="text-4xl font-black text-slate-800 mt-2">{reportData.reduce((acc, curr) => acc + Number(curr.confirmed_tuitions), 0)}</h2>
+                </div>
+                <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-200">
+                  <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">Total Inquiries</p>
+                  <h2 className="text-4xl font-black text-slate-800 mt-2">{reportData.reduce((acc, curr) => acc + Number(curr.total_tuitions), 0)}</h2>
+                </div>
+              </div>
+              <p className="text-center text-xs text-slate-400 italic mt-4">Data reflects performance for {adminProfile?.admin_zone} only.</p>
+            </div>
+          )}
+
+          {/* TAB: BLACKLIST MANAGER */}
+          {activeTab === 'blacklist' && (
+            <div className="space-y-6">
+              <h2 className="text-3xl font-black uppercase italic tracking-tighter">Blacklist Manager</h2>
+              
+              <div className="bg-white p-8 rounded-[40px] shadow-sm border border-red-100">
+                <h3 className="text-xl font-bold text-red-600 mb-4">Add to Blacklist</h3>
+                <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
+                  <div>
+                    <label className="text-[10px] font-bold uppercase text-slate-400">Role</label>
+                    <select className="w-full p-3 border rounded-xl font-bold text-sm" value={newBlacklistEntry.role} onChange={e => setNewBlacklistEntry({...newBlacklistEntry, role: e.target.value})}>
+                      <option value="teacher">Teacher</option>
+                      <option value="parent">Parent</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold uppercase text-slate-400">Mobile Number</label>
+                    <input type="text" className="w-full p-3 border rounded-xl font-bold text-sm" placeholder="Phone" value={newBlacklistEntry.phone} onChange={e => setNewBlacklistEntry({...newBlacklistEntry, phone: e.target.value})} />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold uppercase text-slate-400">Email ID</label>
+                    <input type="email" className="w-full p-3 border rounded-xl font-bold text-sm" placeholder="Email" value={newBlacklistEntry.email} onChange={e => setNewBlacklistEntry({...newBlacklistEntry, email: e.target.value})} />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold uppercase text-slate-400">Main Location</label>
+                    <select className="w-full p-3 border rounded-xl font-bold text-sm" value={newBlacklistEntry.location} onChange={e => setNewBlacklistEntry({...newBlacklistEntry, location: e.target.value})}>
+                      <option value="">Select Location...</option>
+                      {locations.map(l => <option key={l.id} value={l.location_name}>{l.location_name}</option>)}
+                    </select>
+                  </div>
+                  <button onClick={handleAddBlacklist} className="bg-red-600 text-white p-3 rounded-xl font-black uppercase text-xs h-[46px]">Block User</button>
+                </div>
+                <div className="mt-4">
+                   <label className="text-[10px] font-bold uppercase text-slate-400">Reason for Blacklisting</label>
+                   <input type="text" className="w-full p-3 border rounded-xl font-bold text-sm" placeholder="Reason (Optional)" value={newBlacklistEntry.reason} onChange={e => setNewBlacklistEntry({...newBlacklistEntry, reason: e.target.value})} />
+                </div>
+              </div>
+
+              <div className="flex justify-end">
+                <input 
+                  type="text" 
+                  placeholder="Search Blacklist..." 
+                  className="p-3 border rounded-xl font-bold text-sm w-64"
+                  value={blacklistSearch}
+                  onChange={(e) => setBlacklistSearch(e.target.value)}
+                />
+              </div>
+
+              <div className="bg-white rounded-[40px] shadow-sm border overflow-hidden">
+                <table className="w-full text-left">
+                  <thead className="bg-slate-900 text-white text-[10px] font-black uppercase">
+                    <tr>
+                      <th className="p-4">Role</th>
+                      <th className="p-4">Contact Details</th>
+                      <th className="p-4">Location</th>
+                      <th className="p-4">Reason</th>
+                      <th className="p-4 text-right">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {blacklist.filter(item => 
+                      (item.phone && item.phone.includes(blacklistSearch)) || 
+                      (item.email && item.email.toLowerCase().includes(blacklistSearch.toLowerCase())) ||
+                      (item.location && item.location.toLowerCase().includes(blacklistSearch.toLowerCase()))
+                    ).map(item => (
+                      <tr key={item.id} className="border-b hover:bg-red-50 transition">
+                        <td className="p-4 font-black text-xs uppercase">{item.role}</td>
+                        <td className="p-4 text-xs font-bold text-slate-700">{item.phone || '-'} <br/> {item.email || '-'}</td>
+                        <td className="p-4 text-xs">{item.location || 'N/A'}</td>
+                        <td className="p-4 text-xs italic text-slate-500">{item.reason}</td>
+                        <td className="p-4 text-right"><button onClick={() => handleDeleteBlacklist(item.id)} className="text-slate-400 hover:text-green-600 font-bold text-[10px] uppercase">Unblock</button></td>
+                      </tr>
+                    ))}
+                    {blacklist.length === 0 && <tr><td colSpan="5" className="p-8 text-center text-slate-400 italic text-xs">No blacklisted users found.</td></tr>}
+                  </tbody>
+                </table>
               </div>
             </div>
           )}
 
           {/* TAB: MY TEACHERS */}
           {activeTab === 'teachers' && (
-            <div>
-              <h2 className="text-2xl font-black">My Teachers ({myTeachers.length})</h2>
-              <div className="mt-4 grid gap-3">
-                {myTeachers.map(t => (
-                  <div key={t.id} className="p-3 bg-white rounded shadow-sm flex justify-between items-center">
-                    <div>
-                      <div className="font-bold">{t.full_name}</div>
-                      <div className="text-sm text-slate-500">{t.phone_number}</div>
-                    </div>
-                    <div className="flex gap-2">
-                      <button onClick={() => handleVerifyTeacher(t)} className="px-3 py-2 bg-green-600 text-white rounded">Toggle Verify</button>
-                    </div>
-                  </div>
-                ))}
+            <div className="space-y-6">
+              <h2 className="text-3xl font-black uppercase italic tracking-tighter">My Teachers</h2>
+              <div className="bg-white rounded-[40px] shadow-sm border overflow-hidden">
+                <table className="w-full text-left">
+                  <thead className="bg-slate-900 text-white text-[10px] font-black uppercase">
+                    <tr><th className="p-4">Name</th><th className="p-4">Phone</th><th className="p-4">Status</th><th className="p-4 text-right">Action</th></tr>
+                  </thead>
+                  <tbody>
+                    {myTeachers.map(t => {
+                      const blocked = blacklist.find(b => (b.phone === t.phone_number) || (b.email === t.email));
+                      const details = Array.isArray(t.teacher_details) ? t.teacher_details[0] : t.teacher_details;
+                      const isVerified = details?.is_verified;
+                      return (
+                        <tr key={t.id} className={`border-b transition ${blocked ? 'bg-red-50 hover:bg-red-100' : 'hover:bg-slate-50'}`}>
+                          <td className="p-4 font-bold text-sm">{t.full_name}</td>
+                          <td className="p-4 text-xs">{t.phone_number}</td>
+                          <td className="p-4 text-xs">
+                            {isVerified ? (
+                              <span className="bg-green-100 text-green-700 px-2 py-1 rounded text-[9px] font-black uppercase">Verified</span>
+                            ) : (
+                              <span className={`px-2 py-1 rounded text-[9px] font-black uppercase ${details?.setup_completed ? 'bg-blue-100 text-blue-700' : 'bg-orange-100 text-orange-700'}`}>
+                                {details?.setup_completed ? 'Under Review' : 'Incomplete'}
+                              </span>
+                            )}
+                          </td>
+                          <td className="p-4 text-right">
+                            <div className="flex justify-end gap-2">
+                              <button 
+                                onClick={() => handleVerifyTeacher(t)} 
+                                className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase ${isVerified ? 'bg-slate-200 text-slate-600' : 'bg-blue-600 text-white'}`}
+                                title={!isVerified && !details?.setup_completed ? "Force Verify (Incomplete Profile)" : "Verify Teacher"}
+                              >
+                                {isVerified ? 'Unverify' : 'Verify'}
+                              </button>
+                              {blocked ? (
+                                <button onClick={() => handleDeleteBlacklist(blocked.id)} className="bg-green-100 text-green-600 px-3 py-1 rounded-lg text-[10px] font-black uppercase hover:bg-green-200">Unblock</button>
+                              ) : (
+                                <button onClick={() => handleQuickBlacklist(t, 'teacher')} className="bg-red-100 text-red-600 px-3 py-1 rounded-lg text-[10px] font-black uppercase hover:bg-red-200">Blacklist</button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
             </div>
           )}
 
           {/* TAB: MY PARENTS */}
           {activeTab === 'parents' && (
-            <div>
-              <h2 className="text-2xl font-black">My Parents ({myParents.length})</h2>
-              <div className="mt-4 grid gap-3">
-                {myParents.map(p => (
-                  <div key={p.id} className="p-3 bg-white rounded shadow-sm">
-                    <div className="font-bold">{p.full_name}</div>
-                    <div className="text-sm text-slate-500">{p.phone_number}</div>
-                  </div>
-                ))}
+            <div className="space-y-6">
+              <h2 className="text-3xl font-black uppercase italic tracking-tighter">My Parents</h2>
+              <div className="bg-white rounded-[40px] shadow-sm border overflow-hidden">
+                <table className="w-full text-left">
+                  <thead className="bg-slate-900 text-white text-[10px] font-black uppercase">
+                    <tr><th className="p-4">Name</th><th className="p-4">Phone</th><th className="p-4">Zone</th><th className="p-4 text-right">Action</th></tr>
+                  </thead>
+                  <tbody>
+                    {myParents.map(p => {
+                      const blocked = blacklist.find(b => (b.phone === p.phone_number) || (b.email === p.email));
+                      return (
+                        <tr key={p.id} className={`border-b transition ${blocked ? 'bg-red-50 hover:bg-red-100' : 'hover:bg-slate-50'}`}>
+                          <td className="p-4 font-bold text-sm">{p.full_name}</td>
+                          <td className="p-4 text-xs">{p.phone_number}</td>
+                          <td className="p-4 text-xs uppercase font-bold text-blue-600">{p.admin_zone}</td>
+                          <td className="p-4 text-right">
+                            {blocked ? (
+                              <button onClick={() => handleDeleteBlacklist(blocked.id)} className="bg-green-100 text-green-600 px-3 py-1 rounded-lg text-[10px] font-black uppercase hover:bg-green-200">Unblock</button>
+                            ) : (
+                              <button onClick={() => handleQuickBlacklist(p, 'parent')} className="bg-red-100 text-red-600 px-3 py-1 rounded-lg text-[10px] font-black uppercase hover:bg-red-200">Blacklist</button>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
             </div>
           )}
 
-          {/* TAB: SECURITY */}
-          {activeTab === 'security' && (
-            <div>
-              <h2 className="text-2xl font-black">Security Audit</h2>
-              <div className="mt-4">
-                <h3 className="font-bold">Location History</h3>
-                <div className="mt-2 grid gap-2">
-                  {locationHistory.map(h => (
-                    <div key={h.id} className="p-2 bg-white rounded">{h.profiles?.full_name} — {h.changed_at}</div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* TAB: REPORTS */}
-          {activeTab === 'reports' && (
-            <div>
-              <h2 className="text-2xl font-black">Monthly Reports</h2>
-              <div className="mt-4 grid gap-2">
-                {reportData.length === 0 && <div className="p-4 bg-white rounded">No reports yet.</div>}
-                {reportData.map(r => <div key={r.id} className="p-3 bg-white rounded">{r.month} — ₹{r.revenue}</div>)}
-              </div>
-            </div>
-          )}
-
-          {/* TAB: BLACKLIST */}
-          {activeTab === 'blacklist' && (
-            <div>
-              <h2 className="text-2xl font-black">Blacklist ({blacklist.length})</h2>
-              <div className="mt-4 grid gap-2">
-                {blacklist.map(b => (
-                  <div key={b.id} className="p-3 bg-white rounded flex justify-between items-center">
-                    <div>
-                      <div className="font-bold">{b.phone || b.email}</div>
-                      <div className="text-sm text-slate-500">{b.reason}</div>
-                    </div>
-                    <div>
-                      <button onClick={() => handleDeleteBlacklist(b.id)} className="px-3 py-2 bg-red-500 text-white rounded">Remove</button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <div className="mt-6 bg-white p-4 rounded">
-                <h3 className="font-bold">Add Quick Blacklist</h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mt-2">
-                  <input placeholder="Phone" value={newBlacklistEntry.phone} onChange={e => setNewBlacklistEntry({...newBlacklistEntry, phone: e.target.value})} className="p-2 border rounded" />
-                  <input placeholder="Email" value={newBlacklistEntry.email} onChange={e => setNewBlacklistEntry({...newBlacklistEntry, email: e.target.value})} className="p-2 border rounded" />
-                  <button onClick={handleAddBlacklist} className="px-4 py-2 bg-blue-600 text-white rounded">Add</button>
-                </div>
-              </div>
-            </div>
-          )}
-
-      </main>
+        </main>
       </div>
       <Footer />
     </>

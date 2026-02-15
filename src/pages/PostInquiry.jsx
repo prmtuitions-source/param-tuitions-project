@@ -6,7 +6,7 @@ import ContactSection from '../shared/components/ContactSection';
 
 const PostInquiry = () => {
   useEffect(() => {
-    if (typeof document !== 'undefined') document.title = "Hire a Tutor | Param Tuition Bureau";
+    document.title = "Hire a Tutor | Param Tuition Bureau";
   }, []);
 
   return (

@@ -3,7 +3,6 @@ import { useSearchParams } from 'react-router-dom';
 import { supabase } from '../shared/utils/supabaseClient';
 import Header from '../shared/components/Header';
 import Footer from '../shared/components/Footer';
-import uiNotify from '../shared/utils/uiNotify';
 
 export default function TeacherJobBoard() {
   const [tuitions, setTuitions] = useState([]);
@@ -11,8 +10,6 @@ export default function TeacherJobBoard() {
   const [teacherProfile, setTeacherProfile] = useState(null);
   const [searchParams] = useSearchParams();
   const tnFilter = searchParams.get('tn');
-  const [applyingIds, setApplyingIds] = useState(new Set());
-  const origin = (typeof globalThis !== 'undefined' && globalThis.location && globalThis.location.origin) ? globalThis.location.origin : '';
 
   useEffect(() => {
     fetchJobs();
@@ -23,17 +20,14 @@ export default function TeacherJobBoard() {
       setLoading(true);
       // 1. Get Teacher's Zone and Verification Status
       const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('*, teacher_details(is_verified, agreement_signed)')
+        .eq('id', user.id)
+        .single();
       
-      let profile = null;
-      if (user) {
-        const { data } = await supabase
-          .from('profiles')
-          .select('*, teacher_details(is_verified, agreement_signed)')
-          .eq('id', user.id)
-          .single();
-        profile = data;
-        setTeacherProfile(profile);
-      }
+      setTeacherProfile(profile);
 
       // 2. Fetch Tuitions in the same Admin Zone
       let query = supabase
@@ -50,12 +44,11 @@ export default function TeacherJobBoard() {
         query = query.eq('admin_zone', profile.admin_zone);
       }
 
-      const { data: jobs, error } = await query;
-      if (error) {/* TeacherJobBoard: error fetching jobs */}
+      const { data: jobs } = await query;
 
       setTuitions(jobs || []);
     } catch (err) {
-      // Error
+      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -63,58 +56,32 @@ export default function TeacherJobBoard() {
 
   async function applyForJob(job) {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { uiNotify.alert("Please login to apply."); return; }
-    // Prevent duplicate clicks
-    setApplyingIds(prev => new Set(prev).add(job.id));
+    if (!user) return alert("Please login to apply.");
 
-    try {
-      const { error } = await supabase
-        .from('applications')
-        .insert({
-          teacher_id: user.id,
-          tuition_id: job.id,
-          status: 'applied',
-          demo_date: job.preferred_demo_date || null // Autofill demo date if fixed by admin
-        });
-
-      if (!error) {
-        uiNotify.alert("Application sent to Admin!");
-        fetchJobs();
-      } else {
-        // Application Error
-        // Handle Row-Level Security / policy error
-          if (error.code === '42501') {
-          uiNotify.alert("Database Policy Error: The system blocked this application. Please contact Admin to update RLS policies.");
-        }
-        // Handle unique-constraint / duplicate inserts gracefully
-        else if (
-          error.code === '23505' ||
-          (error.message && error.message.toLowerCase().includes('duplicate')) ||
-          (error.details && String(error.details).toLowerCase().includes('duplicate'))
-        ) {
-          // Treat as already applied
-          setTuitions(prev => prev); // no-op but keeps state stable
-          uiNotify.alert('You have already applied for this tuition.');
-          fetchJobs();
-        } else {
-          uiNotify.alert(`Failed to apply: ${error.message || JSON.stringify(error)}`);
-        }
-      }
-    } catch (err) {
-      // Apply exception
-      uiNotify.alert('Failed to apply. Please try again.');
-    } finally {
-      // remove applying flag
-      setApplyingIds(prev => {
-        const next = new Set(prev);
-        next.delete(job.id);
-        return next;
+    const { error } = await supabase
+      .from('applications')
+      .insert({
+        teacher_id: user.id,
+        tuition_id: job.id,
+        status: 'applied',
+        demo_date: job.preferred_demo_date || null // Autofill demo date if fixed by admin
       });
+
+    if (!error) {
+      alert("Application sent to Admin!");
+      fetchJobs();
+    } else {
+      console.error("Application Error:", error);
+      if (error.code === '42501') {
+        alert("Database Policy Error: The system blocked this application. Please contact Admin to update RLS policies.");
+      } else {
+        alert(`Failed to apply: ${error.message}`);
+      }
     }
   }
 
   const handleShareJob = (job) => {
-    const shareUrl = `${origin}/job-board?tn=${job.tuition_no}`;
+    const shareUrl = `${window.location.origin}/job-board?tn=${job.tuition_no}`;
     const shareData = {
       title: `Tuition Job: ${job.subject}`,
       text: `Check out this home tuition job in ${job.location_name} for ${job.subject} (Class ${job.student_class}).`,
@@ -122,9 +89,9 @@ export default function TeacherJobBoard() {
     };
 
     if (navigator.share) {
-      navigator.share(shareData).catch((err) => {/* Error sharing */});
+      navigator.share(shareData).catch((err) => console.error('Error sharing:', err));
     } else {
-      navigator.clipboard?.writeText?.(shareUrl).then(() => uiNotify.alert('Job link copied to clipboard!')).catch(() => uiNotify.alert('Failed to copy link.'));
+      navigator.clipboard.writeText(shareUrl).then(() => alert('Job link copied to clipboard!')).catch(() => alert('Failed to copy link.'));
     }
   };
 
@@ -188,19 +155,17 @@ export default function TeacherJobBoard() {
                     >
                       Share
                     </button>
-                    <div className="flex items-center gap-2">
-                      <button 
-                        onClick={() => applyForJob(job)}
-                        disabled={!teacherProfile?.teacher_details?.is_verified || applyingIds.has(job.id)}
-                        className={`px-6 py-3 rounded-xl font-bold transition ${
-                          teacherProfile?.teacher_details?.is_verified && !applyingIds.has(job.id)
-                          ? 'bg-blue-600 text-white hover:bg-blue-700' 
-                          : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                        }`}
-                      >
-                        {applyingIds.has(job.id) ? 'Applying...' : 'Apply Now'}
-                      </button>
-                    </div>
+                    <button 
+                      onClick={() => applyForJob(job)}
+                      disabled={!teacherProfile?.teacher_details?.is_verified}
+                      className={`px-8 py-3 rounded-xl font-bold transition ${
+                        teacherProfile?.teacher_details?.is_verified 
+                        ? 'bg-blue-600 text-white hover:bg-blue-700' 
+                        : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                      }`}
+                    >
+                      Apply Now
+                    </button>
                     </div>
                   )}
                 </div>

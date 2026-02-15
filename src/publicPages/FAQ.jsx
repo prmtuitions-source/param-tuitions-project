@@ -10,8 +10,11 @@ const FAQ = () => {
   useEffect(() => {
     const fetchFaqs = async () => {
       const { data, error } = await supabase.from('faqs').select('*').order('id');
-      if (error) {/* Error fetching FAQs */}
-      if (data) setFaqs(data);
+      if (error) console.error('Error fetching FAQs:', error);
+      if (data) {
+        console.log('FAQs fetched:', data);
+        setFaqs(data);
+      }
       setLoading(false);
     };
     fetchFaqs();

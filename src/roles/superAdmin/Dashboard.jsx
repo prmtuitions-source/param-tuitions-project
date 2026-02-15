@@ -1,12 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../shared/utils/supabaseClient';
-import logger from '../../shared/utils/logger';
 import Header from '../../shared/components/Header';
-import SignedImg from '../../shared/components/SignedImg';
 import Footer from '../../shared/components/Footer';
-import ReviewGenerator from '../../shared/components/ReviewGenerator';
-import uiNotify from '../../shared/utils/uiNotify';
 
 /**
  * PARAM TUITIONS - SUPER ADMIN MASTER CONTROL
@@ -42,10 +38,6 @@ export default function SuperAdminDashboard() {
   const [teacherRankings, setTeacherRankings] = useState([]);
   const [selectedTeacherHistory, setSelectedTeacherHistory] = useState(null);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
-  const [showTeacherModal, setShowTeacherModal] = useState(false);
-  const [selectedTeacherProfile, setSelectedTeacherProfile] = useState(null);
-  const [showParentModal, setShowParentModal] = useState(false);
-  const [selectedParentProfile, setSelectedParentProfile] = useState(null);
   const [performanceScores, setPerformanceScores] = useState([]);
   
   // NEW: Teacher Score Card State
@@ -55,7 +47,6 @@ export default function SuperAdminDashboard() {
     feedback: 0, punctuality: 0, ethics: 0,
     cancellation_penalty: 0, missed_demo_penalty: 0
   });
-  const [selectedTeacherForScore, setSelectedTeacherForScore] = useState(null);
 
   // NEW: Blacklist State
   const [blacklist, setBlacklist] = useState([]);
@@ -88,8 +79,6 @@ export default function SuperAdminDashboard() {
   });
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [toast, setToast] = useState(null);
-  const [adminProfile, setAdminProfile] = useState(null);
-  const origin = (typeof globalThis !== 'undefined' && globalThis.location && globalThis.location.origin) ? globalThis.location.origin : '';
 
   // NEW: Demo Management States
   const [demos, setDemos] = useState([]);
@@ -139,17 +128,6 @@ export default function SuperAdminDashboard() {
   const [upiId, setUpiId] = useState('');
   const [qrCodeUrl, setQrCodeUrl] = useState('');
   const [qrFile, setQrFile] = useState(null);
-
-  // Search / History states
-  const [searchType, setSearchType] = useState('mobile');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState([]);
-  const [searchLoading, setSearchLoading] = useState(false);
-  const [selectedResult, setSelectedResult] = useState(null);
-  const [historyStart, setHistoryStart] = useState(new Date(new Date().setDate(new Date().getDate()-30)).toISOString().split('T')[0]);
-  const [historyEnd, setHistoryEnd] = useState(new Date().toISOString().split('T')[0]);
-  const [historyLoading, setHistoryLoading] = useState(false);
-  const [history, setHistory] = useState({ attendance: [], applications: [], demos: [] });
 
   const timeSlots = [
     "6:00 AM - 9:00 AM",
@@ -225,27 +203,11 @@ export default function SuperAdminDashboard() {
   ];
 
   useEffect(() => {
-    if (typeof document !== 'undefined') document.title = "Super Admin Dashboard | Param Tuition Bureau";
-
-    const init = async () => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).maybeSingle();
-          setAdminProfile(profile || null);
-        }
-      } catch (e) {
-        // Failed to load admin profile
-      }
-
-      // Load dashboard data after attempting to load profile
-      fetchMasterData();
-      fetchSystemSettings(); // Load TN and Phone data
-      fetchLeads();
-      fetchDemos();
-    };
-
-    init();
+    document.title = "Super Admin Dashboard | Param Tuition Bureau";
+    fetchMasterData();
+    fetchSystemSettings(); // Load TN and Phone data
+    fetchLeads();
+    fetchDemos();
   }, []);
 
   // Helper: Calculate Distance
@@ -297,7 +259,7 @@ export default function SuperAdminDashboard() {
 
     const { data } = await supabase
       .from('demos')
-      .select(`*, teacher:profiles!teacher_id(full_name), parent:profiles(full_name), tuition:tuitions(subject, student_class, location_name, admin_zone)`)
+      .select(`*, teacher:profiles!teacher_id(full_name), parent:profiles!parent_id(full_name), tuition:tuitions(subject, student_class, location_name, admin_zone)`)
       .gte('demo_date', startDate)
       .lte('demo_date', endDate)
       .order('demo_date', { ascending: true })
@@ -305,76 +267,6 @@ export default function SuperAdminDashboard() {
     
     setDemos(data || []);
   }
-
-  // Search handlers for Super Admin
-  const handleSearch = async () => {
-    if (!searchQuery || searchQuery.trim().length === 0) return uiNotify.alert('Enter a search query');
-    setSearchLoading(true);
-    setSearchResults([]);
-    try {
-      if (searchType === 'mobile') {
-        const q = `%${searchQuery.replace(/[^0-9]/g, '')}%`;
-        const { data } = await supabase.from('profiles').select('*').ilike('phone_number', q).order('created_at', { ascending: false }).limit(50);
-        setSearchResults(data || []);
-      } else {
-        const q = searchQuery.trim();
-        const { data } = await supabase.from('tuitions').select('*, parent:profiles(*)').or(`tuition_no.ilike.%${q}%,id.eq.${q}`).limit(50);
-        setSearchResults(data || []);
-      }
-    } catch (e) {
-      // Search error
-      uiNotify.alert('Search failed');
-    } finally {
-      setSearchLoading(false);
-    }
-  };
-
-  const selectResult = async (r) => {
-    setSelectedResult(r);
-    await fetchHistory(r);
-  };
-
-  const fetchHistory = async (r) => {
-    setHistoryLoading(true);
-    setHistory({ attendance: [], applications: [], demos: [] });
-    try {
-      let tuitionIds = [];
-      if (r.tuition_no || (r.id && r.subject)) {
-        tuitionIds = [r.id];
-      } else if (r.id) {
-        const { data: tuts } = await supabase.from('tuitions').select('*').eq('parent_id', r.id).order('created_at', { ascending: false }).limit(200);
-        tuitionIds = (tuts || []).map(t => t.id);
-      }
-
-      if (tuitionIds.length > 0) {
-        const { data: attend } = await supabase.from('tuition_attendance')
-          .select('*')
-          .in('tuition_id', tuitionIds)
-          .gte('class_date', historyStart)
-          .lte('class_date', historyEnd)
-          .order('class_date', { ascending: false });
-        const { data: apps } = await supabase.from('applications')
-          .select('*')
-          .in('tuition_id', tuitionIds)
-          .order('created_at', { ascending: false });
-        const { data: dms } = await supabase.from('demos')
-          .select('*')
-          .in('tuition_id', tuitionIds)
-          .gte('demo_date', historyStart)
-          .lte('demo_date', historyEnd)
-          .order('demo_date', { ascending: false });
-
-        setHistory({ attendance: attend || [], applications: apps || [], demos: dms || [] });
-      } else {
-        setHistory({ attendance: [], applications: [], demos: [] });
-      }
-    } catch (e) {
-      // History fetch error
-      uiNotify.alert('Failed to fetch history');
-    } finally {
-      setHistoryLoading(false);
-    }
-  };
 
   async function fetchMasterData() {
     setLoading(true);
@@ -392,7 +284,7 @@ export default function SuperAdminDashboard() {
       // 3. Fetch Pending Inquiries (Expanded for Booking Flow)
       const { data: inqs } = await supabase
         .from('tuitions')
-        .select('*, parent:profiles(latitude, longitude), applications(id, teacher_id, status, created_at, teacher:profiles(id, full_name, phone_number, email, latitude, longitude, teacher_details(*)))')
+        .select('*, parent:profiles!parent_id(latitude, longitude), applications(id, teacher_id, status, created_at, teacher:profiles(id, full_name, phone_number, email, latitude, longitude, teacher_details(*)))')
         .in('status', ['open', 'demo_allotted', 'DEMO_SCHEDULED', 'DEMO_POSTPONED', 'booked', 'BOOKED', 'demo_started'])
         .order('created_at', { ascending: false });
       setPendingInquiries(inqs || []);
@@ -491,24 +383,24 @@ export default function SuperAdminDashboard() {
       const { data: blData } = await supabase.from('blacklist').select('*').order('created_at', { ascending: false });
       setBlacklist(blData || []);
 
-    } catch (e) { /* Master data fetch error */ }
+    } catch (e) { console.error(e); }
     setLoading(false);
   }
 
   // NEW: HANDLE TEACHER BANNING
   const handleVerifyTeacher = async (teacher) => {
     const details = Array.isArray(teacher.teacher_details) ? teacher.teacher_details[0] : teacher.teacher_details;
-    if (!details) return uiNotify.alert("Cannot verify: Registration incomplete.");
+    if (!details) return alert("Cannot verify: Registration incomplete.");
     
     // NEW: Check setup_completed to ensure documents are uploaded
     if (!details.setup_completed && !details.is_verified) {
-        if (!uiNotify.confirm("⚠️ SYSTEM WARNING: This teacher's profile is marked as INCOMPLETE (missing documents or details).\n\nDo you want to FORCE VERIFY them anyway?")) {
+        if (!window.confirm("⚠️ SYSTEM WARNING: This teacher's profile is marked as INCOMPLETE (missing documents or details).\n\nDo you want to FORCE VERIFY them anyway?")) {
             return;
         }
     }
 
     const currentStatus = details.is_verified;
-    if (!uiNotify.confirm(`Are you sure you want to ${currentStatus ? 'UNVERIFY' : 'VERIFY'} ${teacher.full_name}?`)) return;
+    if (!window.confirm(`Are you sure you want to ${currentStatus ? 'UNVERIFY' : 'VERIFY'} ${teacher.full_name}?`)) return;
 
     const { error } = await supabase
       .from('teacher_details')
@@ -518,14 +410,14 @@ export default function SuperAdminDashboard() {
       })
       .eq('id', teacher.id);
 
-    if (error) uiNotify.alert("Error: " + error.message);
+    if (error) alert("Error: " + error.message);
     else {
       fetchMasterData();
     }
   };
 
   const handleBanTeacher = async () => {
-    if (!uiNotify.confirm("CRITICAL: Are you sure you want to PERMANENTLY BAN this teacher? They will lose all access immediately.")) return;
+    if (!window.confirm("CRITICAL: Are you sure you want to PERMANENTLY BAN this teacher? They will lose all access immediately.")) return;
     
     const { error } = await supabase
       .from('profiles')
@@ -533,7 +425,7 @@ export default function SuperAdminDashboard() {
       .eq('id', auditingTeacherId);
 
     if (!error) {
-      uiNotify.alert("Teacher blacklisted successfully.");
+      alert("Teacher blacklisted successfully.");
       setShowHistoryModal(false);
       fetchMasterData();
     }
@@ -625,9 +517,9 @@ export default function SuperAdminDashboard() {
 
     const { error } = await supabase.from('teacher_performance_scores').upsert(dbPayload, { onConflict: 'teacher_id' });
     
-    if (error) uiNotify.alert("Error saving score: " + error.message);
+    if (error) alert("Error saving score: " + error.message);
     else {
-      uiNotify.alert(`Score Saved! Total: ${total}/100 (${grade})`);
+      alert(`Score Saved! Total: ${total}/100 (${grade})`);
       setShowScoreModal(false);
       fetchMasterData();
     }
@@ -635,24 +527,24 @@ export default function SuperAdminDashboard() {
 
   // NEW: Blacklist Handlers
   const handleAddBlacklist = async () => {
-    if (!newBlacklistEntry.phone && !newBlacklistEntry.email) return uiNotify.alert("Either Phone or Email is required.");
+    if (!newBlacklistEntry.phone && !newBlacklistEntry.email) return alert("Either Phone or Email is required.");
     const { error } = await supabase.from('blacklist').insert({ ...newBlacklistEntry, added_by: 'Super Admin' });
-    if (error) uiNotify.alert("Error adding to blacklist: " + error.message);
+    if (error) alert("Error adding to blacklist: " + error.message);
     else {
-      uiNotify.alert("User blacklisted successfully.");
+      alert("User blacklisted successfully.");
       setNewBlacklistEntry({ role: 'teacher', phone: '', email: '', location: '', reason: '' });
       fetchMasterData();
     }
   };
 
   const handleDeleteBlacklist = async (id) => {
-    if (!uiNotify.confirm("Remove this user from blacklist?")) return;
+    if (!window.confirm("Remove this user from blacklist?")) return;
     await supabase.from('blacklist').delete().eq('id', id);
     fetchMasterData();
   };
 
   const handleQuickBlacklist = async (user, role) => {
-    const reason = uiNotify.prompt(`Confirm Blacklist for ${user.full_name}? Enter reason:`, "Fraud/Policy Violation");
+    const reason = prompt(`Confirm Blacklist for ${user.full_name}? Enter reason:`, "Fraud/Policy Violation");
     if (!reason) return;
 
     const { error } = await supabase.from('blacklist').insert({
@@ -664,27 +556,27 @@ export default function SuperAdminDashboard() {
       added_by: 'Super Admin'
     });
 
-    if (error) uiNotify.alert("Error adding to blacklist: " + error.message);
+    if (error) alert("Error adding to blacklist: " + error.message);
     else {
-      uiNotify.alert("User blacklisted successfully.");
+      alert("User blacklisted successfully.");
       fetchMasterData();
     }
   };
 
   // NEW: Review Parameter Handlers
   const handleAddReviewParam = async () => {
-    if (!newReviewParam.category || !newReviewParam.parameter) return uiNotify.alert("Category and Parameter are required");
+    if (!newReviewParam.category || !newReviewParam.parameter) return alert("Category and Parameter are required");
     const { error } = await supabase.from('review_parameters').insert(newReviewParam);
-    if (error) uiNotify.alert("Error adding parameter: " + error.message);
+    if (error) alert("Error adding parameter: " + error.message);
     else {
-      uiNotify.alert("Parameter added!");
+      alert("Parameter added!");
       setNewReviewParam({ ...newReviewParam, parameter: '' }); // Keep category/role for easier entry
       fetchMasterData();
     }
   };
 
   const handleDeleteReviewParam = async (id) => {
-    if (!uiNotify.confirm("Delete this parameter?")) return;
+    if (!window.confirm("Delete this parameter?")) return;
     await supabase.from('review_parameters').delete().eq('id', id);
     fetchMasterData();
   };
@@ -705,7 +597,7 @@ export default function SuperAdminDashboard() {
         finalQrUrl = publicUrl;
         setQrCodeUrl(publicUrl);
       } catch (error) {
-        uiNotify.alert("QR Upload Failed: " + error.message);
+        alert("QR Upload Failed: " + error.message);
       }
     }
 
@@ -719,7 +611,7 @@ export default function SuperAdminDashboard() {
     for (const item of updates) {
       await supabase.from('system_settings').upsert(item);
     }
-    uiNotify.alert("System settings synchronized successfully.");
+    alert("System settings synchronized successfully.");
     setLoading(false);
   };
 
@@ -731,35 +623,11 @@ export default function SuperAdminDashboard() {
     setShowHistoryModal(true);
   };
 
-  const viewTeacherProfile = async (teacherId) => {
-    try {
-      const { data, error } = await supabase.from('profiles').select('*, teacher_details(*)').eq('id', teacherId).maybeSingle();
-      if (error) throw error;
-      setSelectedTeacherProfile(data);
-      setShowTeacherModal(true);
-    } catch (err) {
-      logger.warn('Failed to fetch teacher profile', err);
-      // Failed to fetch teacher profile
-    }
-  };
-
-  const viewParentProfile = async (parentId) => {
-    try {
-      const { data, error } = await supabase.from('profiles').select('*').eq('id', parentId).maybeSingle();
-      if (error) throw error;
-      setSelectedParentProfile(data);
-      setShowParentModal(true);
-    } catch (err) {
-      // Failed to fetch parent profile
-      uiNotify.alert('Unable to load parent details.');
-    }
-  };
-
   // --- Handlers (Zone Mapping, Matching, Allotting, Locations) ---
   const updateLocationZone = async (locId, newZone) => {
     const { error } = await supabase.from('locations').update({ admin_zone: newZone }).eq('id', locId);
     if (!error) { 
-      uiNotify.alert(`Area reassigned to ${newZone} successfully!`); 
+      alert(`Area reassigned to ${newZone} successfully!`); 
       fetchMasterData(); 
     }
   };
@@ -815,7 +683,7 @@ export default function SuperAdminDashboard() {
   };
 
   const handleConvertToTuition = async () => {
-    if (!verifiedLeadData.fee || !verifiedLeadData.school) return uiNotify.alert("Verify Fee and School first.");
+    if (!verifiedLeadData.fee || !verifiedLeadData.school) return alert("Verify Fee and School first.");
     setLoading(true);
 
     // 0. AUTO-LINK: If parent_id is missing, try to find a profile with the same phone number
@@ -837,7 +705,7 @@ export default function SuperAdminDashboard() {
     }
 
     if (!finalParentId) {
-      if (!uiNotify.confirm("No registered Parent account found.\n\nDo you want to proceed anyway?")) {
+      if (!window.confirm("No registered Parent account found.\n\nDo you want to proceed anyway?")) {
         setLoading(false);
         return;
       }
@@ -893,15 +761,15 @@ ${assignedTN}
 ❖Fixed Demo: ${verifiedLeadData.demo_date ? new Date(verifiedLeadData.demo_date).toLocaleDateString('en-IN') : 'Flexible'}
 ❖Mode: ${verifiedLeadData.mode}
 ❖Requirement: ${verifiedLeadData.demands?.join(', ') || ''}
-❖Apply Here: ${origin}/job-board?tn=${assignedTN}`.trim();
+❖Apply Here: ${window.location.origin}/job-board?tn=${assignedTN}`.trim();
 
       // Copy to Clipboard
       try {
-        await navigator.clipboard?.writeText?.(jobCard);
-      } catch (err) { /* Clipboard copy failed */ }
+        await navigator.clipboard.writeText(jobCard);
+      } catch (err) { console.error("Clipboard copy failed", err); }
 
       // 5. Open WhatsApp and UI cleanup
-      (typeof globalThis !== 'undefined' && typeof globalThis.open === 'function') ? globalThis.open(`https://wa.me/?text=${encodeURIComponent(jobCard)}`, '_blank', 'noopener,noreferrer') : (typeof globalThis !== 'undefined' && globalThis.location ? (globalThis.location.href = `https://wa.me/?text=${encodeURIComponent(jobCard)}`) : null);
+      window.open(`https://wa.me/?text=${encodeURIComponent(jobCard)}`, '_blank');
       
       setToast({ title: 'Job Posted!', message: 'Text copied to clipboard.' });
       setShowConvertModal(false);
@@ -909,7 +777,7 @@ ${assignedTN}
       fetchMasterData();
 
     } catch (err) {
-      uiNotify.alert(`Operation Failed: ${err.message}`);
+      alert(`Operation Failed: ${err.message}`);
     } finally {
       setLoading(false);
     }
@@ -929,39 +797,39 @@ ${assignedTN}
         p_time_slot: matchFilters.timeSlot || null // Requires RPC update
       });
       if (data) setMatchedTeachers(data);
-    } catch (err) { /* Match error */ }
+    } catch (err) { console.error(err); }
     setIsMatching(false);
   }
 
   // --- NEW: TUITION ALLOTMENT & DEMO LOGIC ---
 
   const handleBookTuition = async (applicationId, tuitionId, teacher, tuitionNo) => {
-    if (!uiNotify.confirm(`Confirm booking for ${teacher.full_name}? This will share parent contact details.`)) return;
+    if (!window.confirm(`Confirm booking for ${teacher.full_name}? This will share parent contact details.`)) return;
     
     const { error: appError } = await supabase.from('applications').update({ status: 'demo_allotted' }).eq('id', applicationId);
     const { error: tuiError } = await supabase.from('tuitions').update({ status: 'demo_allotted' }).eq('id', tuitionId);
     
     if (!appError && !tuiError) {
-      uiNotify.alert(`Tuition ${tuitionNo} BOOKED! Parent contact shared with ${teacher.full_name}.`);
+      alert(`Tuition ${tuitionNo} BOOKED! Parent contact shared with ${teacher.full_name}.`);
       fetchMasterData();
     } else {
-      // Booking Error
-      uiNotify.alert(`Failed to book tuition. \nApp Error: ${appError?.message}\nTuition Error: ${tuiError?.message}`);
+      console.error("Booking Error:", appError, tuiError);
+      alert(`Failed to book tuition. \nApp Error: ${appError?.message}\nTuition Error: ${tuiError?.message}`);
     }
   };
 
   const handleConfirmTuition = async (applicationId, tuitionId) => {
-    if (!uiNotify.confirm("Confirm this tuition officially? This will mark it as 'Confirmed'.")) return;
+    if (!window.confirm("Confirm this tuition officially? This will mark it as 'Confirmed'.")) return;
     setLoading(true);
     try {
         const { error: appError } = await supabase.from('applications').update({ status: 'confirmed', demo_completed_at: new Date() }).eq('id', applicationId);
         if (appError) throw appError;
         const { error: tuiError } = await supabase.from('tuitions').update({ status: 'confirmed' }).eq('id', tuitionId);
         if (tuiError) throw tuiError;
-        uiNotify.alert("Tuition Confirmed Successfully!");
+        alert("Tuition Confirmed Successfully!");
         fetchMasterData();
     } catch (e) {
-        uiNotify.alert("Error: " + e.message);
+        alert("Error: " + e.message);
     } finally {
         setLoading(false);
     }
@@ -999,7 +867,7 @@ ${assignedTN}
         // Update Tuition Status
         await supabase.from('tuitions').update({ status: 'DEMO_SCHEDULED' }).eq('id', selectedDemoItem.tuitionId);
         await supabase.from('applications').update({ status: 'DEMO_SCHEDULED' }).eq('id', selectedDemoItem.applicationId);
-        uiNotify.alert("Demo Scheduled Successfully!");
+        alert("Demo Scheduled Successfully!");
 
       } else if (demoModalMode === 'postpone') {
         // Postpone Demo
@@ -1023,7 +891,7 @@ ${assignedTN}
 
         // Log Change
         await supabase.from('demo_logs').insert({ demo_id: selectedDemoItem.id, old_status: selectedDemoItem.status, new_status: 'DEMO_POSTPONED', changed_by: user.id, remarks: demoForm.remarks });
-        uiNotify.alert("Demo Postponed Successfully!");
+        alert("Demo Postponed Successfully!");
 
       } else if (demoModalMode === 'status') {
         // Update Status
@@ -1044,13 +912,13 @@ ${assignedTN}
           .eq('id', selectedDemoItem.tuition_id);
 
         await supabase.from('demo_logs').insert({ demo_id: selectedDemoItem.id, old_status: selectedDemoItem.status, new_status: demoForm.status, changed_by: user.id, remarks: demoForm.remarks });
-        uiNotify.alert("Demo Status Updated!");
+        alert("Demo Status Updated!");
       }
 
       setShowDemoModal(false);
       fetchMasterData();
       fetchDemos();
-    } catch (e) { /* Demo submit error */ }
+    } catch (e) { alert(e.message); }
     setLoading(false);
   };
 
@@ -1073,13 +941,6 @@ ${assignedTN}
 
     if (blogImageFile) {
       try {
-        // Confirm authenticated session — RLS will block inserts from anonymous contexts
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
-          uiNotify.alert('You are not authenticated. Please login again and retry.');
-          setLoading(false);
-          return;
-        }
         const fileExt = blogImageFile.name.split('.').pop();
         const fileName = `blog_${Date.now()}.${fileExt}`;
         const { error: uploadError } = await supabase.storage
@@ -1094,8 +955,7 @@ ${assignedTN}
         
         imageUrl = publicUrl;
       } catch (error) {
-        // Blog image upload failed
-        uiNotify.alert("Image upload failed: " + (error?.message || JSON.stringify(error)));
+        alert("Image upload failed: " + error.message);
         setLoading(false);
         return;
       }
@@ -1111,34 +971,30 @@ ${assignedTN}
     };
 
     let error;
-    try {
-      if (editingBlog.id) {
-        ({ error } = await supabase.from('blogs').update(blogData).eq('id', editingBlog.id));
-      } else {
-        ({ error } = await supabase.from('blogs').insert(blogData));
-      }
-      if (error) throw error;
-    } catch (err) {
-      // Error saving blog row
-      uiNotify.alert("Error saving blog: " + (err?.message || JSON.stringify(err)));
-      setLoading(false);
-      return;
+    if (editingBlog.id) {
+      ({ error } = await supabase.from('blogs').update(blogData).eq('id', editingBlog.id));
+    } else {
+      ({ error } = await supabase.from('blogs').insert(blogData));
     }
-    uiNotify.alert("Blog saved successfully!");
-    setEditingBlog(null);
-    setBlogImageFile(null);
-    fetchMasterData();
+
+    if (error) alert("Error saving blog: " + error.message);
+    else {
+      alert("Blog saved successfully!");
+      setEditingBlog(null);
+      setBlogImageFile(null);
+      fetchMasterData();
+    }
     setLoading(false);
   };
 
   const handleDeleteBlog = async (id) => {
-    if(!uiNotify.confirm("Delete this blog post?")) return;
+    if(!window.confirm("Delete this blog post?")) return;
     await supabase.from('blogs').delete().eq('id', id);
     fetchMasterData();
   };
 
   const handleAddGalleryImage = async () => {
-    if(!galleryImageFile) return uiNotify.alert("Please select an image file.");
+    if(!galleryImageFile) return alert("Please select an image file.");
     setLoading(true);
 
     try {
@@ -1159,21 +1015,21 @@ ${assignedTN}
       setGalleryImageFile(null);
       fetchMasterData();
     } catch (error) {
-      uiNotify.alert("Gallery upload failed: " + error.message);
+      alert("Gallery upload failed: " + error.message);
     } finally {
       setLoading(false);
     }
   };
 
   const handleDeleteGalleryImage = async (id) => {
-    if(!uiNotify.confirm("Remove this image?")) return;
+    if(!window.confirm("Remove this image?")) return;
     await supabase.from('gallery').delete().eq('id', id);
     fetchMasterData();
   };
 
   const handleSaveFormConfig = async () => {
     await supabase.from('system_settings').upsert({ key: 'form_config', value: JSON.stringify(formConfig) });
-    uiNotify.alert("Form settings updated globally.");
+    alert("Form settings updated globally.");
   };
 
   const handleSaveFaq = async (e) => {
@@ -1195,7 +1051,7 @@ ${assignedTN}
     }
 
     if (error) {
-      uiNotify.alert("Error saving FAQ: " + error.message);
+      alert("Error saving FAQ: " + error.message);
       setLoading(false);
     } else {
       setEditingFaq(null);
@@ -1204,12 +1060,12 @@ ${assignedTN}
   };
 
   const handleDeleteFaq = async (id) => {
-    if (!uiNotify.confirm("Delete this FAQ?")) return;
+    if (!window.confirm("Delete this FAQ?")) return;
     setLoading(true);
     const { error } = await supabase.from('faqs').delete().eq('id', id);
     
     if (error) {
-      uiNotify.alert("Error deleting FAQ: " + error.message);
+      alert("Error deleting FAQ: " + error.message);
       setLoading(false);
     } else {
       await fetchMasterData();
@@ -1224,22 +1080,22 @@ ${assignedTN}
     const { error: dosAndDontsError } = await supabase.from('site_content').upsert({ key: 'dos_and_donts', content: dosAndDontsContent }, { onConflict: 'key' });
     
     if (parentError || teacherError || generalError || dosAndDontsError) {
-      // Error saving terms
+      alert("Error saving terms: " + (parentError?.message || teacherError?.message || generalError?.message || dosAndDontsError?.message));
     } else {
-      uiNotify.alert("Terms updated successfully!");
+      alert("Terms updated successfully!");
     }
     setLoading(false);
   };
 
   const addHoliday = async (e) => {
     e.preventDefault();
-    if (!newEvent.event_name || !newEvent.date) return uiNotify.alert("Event name and date are required.");
+    if (!newEvent.event_name || !newEvent.date) return alert("Event name and date are required.");
     setLoading(true);
     const { error } = await supabase.from('holidays').insert(newEvent);
     if (error) {
-      uiNotify.alert("Error adding holiday: " + error.message);
+      alert("Error adding holiday: " + error.message);
     } else {
-      uiNotify.alert("Holiday added successfully!");
+      alert("Holiday added successfully!");
       setNewEvent({ event_name: '', date: '' });
       await fetchMasterData();
     }
@@ -1247,13 +1103,13 @@ ${assignedTN}
   };
 
   const deleteHoliday = async (id) => {
-    if (!uiNotify.confirm("Are you sure you want to delete this holiday?")) return;
+    if (!window.confirm("Are you sure you want to delete this holiday?")) return;
     setLoading(true);
     const { error } = await supabase.from('holidays').delete().eq('id', id);
     if (error) {
-      uiNotify.alert("Error deleting holiday: " + error.message);
+      alert("Error deleting holiday: " + error.message);
     } else {
-      uiNotify.alert("Holiday deleted successfully!");
+      alert("Holiday deleted successfully!");
       await fetchMasterData();
     }
     setLoading(false);
@@ -1262,7 +1118,6 @@ ${assignedTN}
 
   const navItems = [
     { label: 'Overview', icon: '📊', tab: 'overview' },
-    { label: 'Search History', icon: '🔎', tab: 'search' },
     { label: 'New Leads', icon: '📞', tab: 'leads' },
     { label: 'My Teachers', icon: '👨‍🏫', tab: 'teachers' },
     { label: 'My Parents', icon: '👨‍👩‍👧', tab: 'parents' },
@@ -1601,11 +1456,6 @@ ${assignedTN}
               </div>
             </div>
 
-            {/* REVIEW GENERATOR WIDGET */}
-            <div className="mt-6">
-              <ReviewGenerator />
-            </div>
-
             {/* TEACHER RANKING TABLE */}
             <section className="bg-white rounded-[40px] shadow-sm border overflow-hidden overflow-x-auto">
               <div className="p-6 bg-slate-900 text-white flex justify-between items-center">
@@ -1630,7 +1480,7 @@ ${assignedTN}
                       <tr key={t.id} className="border-b last:border-0 hover:bg-slate-50 transition group">
                         <td className="p-6 flex items-center gap-3">
                            <div className="relative">
-                              <SignedImg path={t.photo_url} className="w-10 h-10 rounded-full object-cover border-2 border-white shadow-sm" />
+                              <img src={t.photo_url || 'https://placehold.co/150'} className="w-10 h-10 rounded-full object-cover border-2 border-white shadow-sm" />
                               <span className={`absolute -top-1 -right-1 px-1.5 py-0.5 rounded-md text-[8px] font-black text-white shadow-sm 
                                 ${gradeData?.tutor_grade === 'A+' ? 'bg-orange-500' : 
                                   gradeData?.tutor_grade === 'A' ? 'bg-green-600' : 
@@ -1659,114 +1509,6 @@ ${assignedTN}
               </table>
             </section>
           </div>
-        )}
-
-        {/* SEARCH / HISTORY SECTION */}
-        {activeTab === 'search' && (
-          <section className="bg-white rounded-[40px] shadow-sm border overflow-hidden">
-            <div className="p-6 bg-blue-600 text-white flex justify-between items-center">
-              <h3 className="text-xs font-black uppercase italic tracking-widest">Search Tuitions / Profiles</h3>
-              <span className="text-[10px] font-bold bg-white text-blue-600 px-3 py-1 rounded-full">Global</span>
-            </div>
-            <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
-              <div>
-                <label className="text-[11px] font-bold text-slate-600">Search By</label>
-                <select className="w-full p-3 rounded-xl border" value={searchType} onChange={e => setSearchType(e.target.value)}>
-                  <option value="mobile">Mobile Number</option>
-                  <option value="tuition">Tuition No / ID</option>
-                </select>
-              </div>
-              <div>
-                <label className="text-[11px] font-bold text-slate-600">Query</label>
-                <input className="w-full p-3 rounded-xl border" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="Enter phone number or tuition no" />
-              </div>
-              <div className="flex gap-2">
-                <div>
-                  <label className="text-[11px] font-bold text-slate-600">From</label>
-                  <input type="date" className="p-3 rounded-xl border" value={historyStart} onChange={e => setHistoryStart(e.target.value)} />
-                </div>
-                <div>
-                  <label className="text-[11px] font-bold text-slate-600">To</label>
-                  <input type="date" className="p-3 rounded-xl border" value={historyEnd} onChange={e => setHistoryEnd(e.target.value)} />
-                </div>
-                <div className="flex items-center">
-                  <button onClick={handleSearch} className="bg-blue-600 text-white px-4 py-2 rounded-xl font-bold">Search</button>
-                </div>
-              </div>
-            </div>
-
-            <div className="p-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="bg-slate-50 p-4 rounded-xl border">
-                  <h4 className="text-sm font-black">Results</h4>
-                  {searchLoading ? <p className="text-xs text-slate-400">Searching...</p> : (
-                    <div className="mt-3 space-y-2">
-                      {searchResults.length === 0 && <p className="text-xs text-slate-400">No results</p>}
-                      {searchResults.map(r => (
-                        <div key={r.id || r.tuition_no} className="p-3 bg-white rounded-md border flex justify-between items-center">
-                          <div>
-                            <div className="font-bold text-sm">{r.full_name || r.tuition_no || r.id}</div>
-                            <div className="text-xs text-slate-500">{r.phone_number || r.subject || ''}</div>
-                          </div>
-                          <div className="flex gap-2">
-                            <button onClick={() => selectResult(r)} className="text-blue-600 underline text-[11px] font-bold">Open</button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                <div className="bg-slate-50 p-4 rounded-xl border">
-                  <h4 className="text-sm font-black">History</h4>
-                  {selectedResult ? (
-                    <div className="mt-3 space-y-3">
-                      <div className="text-xs text-slate-600 font-bold">Selected: {selectedResult.full_name || selectedResult.tuition_no || selectedResult.id}</div>
-                      <div className="bg-white p-3 rounded-md border">
-                        <h5 className="text-xs font-black">Attendance ({historyStart} → {historyEnd})</h5>
-                        {historyLoading ? <p className="text-xs text-slate-400">Loading...</p> : (
-                          <div className="mt-2 space-y-1 text-xs">
-                            {history.attendance?.length === 0 && <div className="text-slate-400">No attendance records</div>}
-                            {history.attendance?.map(a => (
-                              <div key={a.id} className="flex justify-between items-center">
-                                <div>{new Date(a.class_date).toLocaleDateString()}</div>
-                                <div className={`text-[10px] font-black uppercase ${a.status === 'absent' ? 'text-red-600' : 'text-green-600'}`}>{a.status}</div>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="bg-white p-3 rounded-md border">
-                        <h5 className="text-xs font-black">Applications</h5>
-                        {history.applications?.length === 0 && <div className="text-slate-400 text-xs">No applications</div>}
-                        {history.applications?.map(app => (
-                          <div key={app.id} className="text-xs border-b py-2">
-                            <div className="font-bold">{app.status} — {app.created_at && new Date(app.created_at).toLocaleDateString()}</div>
-                            <div className="text-slate-500">Teacher: {app.teacher_id}</div>
-                          </div>
-                        ))}
-                      </div>
-
-                      <div className="bg-white p-3 rounded-md border">
-                        <h5 className="text-xs font-black">Demos</h5>
-                        {history.demos?.length === 0 && <div className="text-slate-400 text-xs">No demos</div>}
-                        {history.demos?.map(d => (
-                          <div key={d.id} className="text-xs border-b py-2">
-                            <div className="font-bold">{d.demo_date} {d.demo_time}</div>
-                            <div className="text-slate-500">Status: {d.status}</div>
-                          </div>
-                        ))}
-                      </div>
-
-                    </div>
-                  ) : (
-                    <p className="text-xs text-slate-400">Open a result to view history.</p>
-                  )}
-                </div>
-              </div>
-            </div>
-          </section>
         )}
 
         {/* FRESH LEADS SECTION */}
@@ -1841,7 +1583,6 @@ ${assignedTN}
                               {isVerified ? 'Unverify' : 'Verify'}
                             </button>
                             <button onClick={() => openScoreModal(t)} className="bg-purple-600 text-white px-3 py-1 rounded-lg text-[10px] font-black uppercase hover:bg-purple-700">Evaluate</button>
-                            <button onClick={() => viewTeacherProfile(t.id)} className="bg-indigo-600 text-white px-3 py-1 rounded-lg text-[10px] font-black uppercase hover:bg-indigo-700">Details</button>
                             <button onClick={() => viewTeacherDetails(t.id)} className="bg-slate-900 text-white px-3 py-1 rounded-lg text-[10px] font-black uppercase">History</button>
                             {blocked ? (
                               <button onClick={() => handleDeleteBlacklist(blocked.id)} className="bg-green-100 text-green-600 px-3 py-1 rounded-lg text-[10px] font-black uppercase hover:bg-green-200">Unblock</button>
@@ -1882,14 +1623,11 @@ ${assignedTN}
                         <td className="p-4 text-xs">{p.phone_number}</td>
                         <td className="p-4 text-xs uppercase font-bold text-blue-600">{p.admin_zone || 'Unassigned'}</td>
                         <td className="p-4 text-right">
-                          <div className="flex justify-end gap-2">
-                            <button onClick={() => viewParentProfile(p.id)} className="bg-indigo-600 text-white px-3 py-1 rounded-lg text-[10px] font-black uppercase hover:bg-indigo-700">Details</button>
-                            {blocked ? (
-                              <button onClick={() => handleDeleteBlacklist(blocked.id)} className="bg-green-100 text-green-600 px-3 py-1 rounded-lg text-[10px] font-black uppercase hover:bg-green-200">Unblock</button>
-                            ) : (
-                              <button onClick={() => handleQuickBlacklist(p, 'parent')} className="bg-red-100 text-red-600 px-3 py-1 rounded-lg text-[10px] font-black uppercase hover:bg-red-200">Blacklist</button>
-                            )}
-                          </div>
+                          {blocked ? (
+                            <button onClick={() => handleDeleteBlacklist(blocked.id)} className="bg-green-100 text-green-600 px-3 py-1 rounded-lg text-[10px] font-black uppercase hover:bg-green-200">Unblock</button>
+                          ) : (
+                            <button onClick={() => handleQuickBlacklist(p, 'parent')} className="bg-red-100 text-red-600 px-3 py-1 rounded-lg text-[10px] font-black uppercase hover:bg-red-200">Blacklist</button>
+                          )}
                         </td>
                       </tr>
                     );
@@ -1999,7 +1737,7 @@ ${assignedTN}
                               </td>
                               <td className="p-6 text-xs font-bold text-slate-700">{log.admin?.full_name}</td>
                               <td className="p-6 text-right">
-                                 <button onClick={() => (typeof globalThis !== 'undefined' && typeof globalThis.open === 'function') ? globalThis.open(`https://wa.me/91${log.tuition?.parent?.phone_number}`, '_blank', 'noopener,noreferrer') : (typeof globalThis !== 'undefined' && globalThis.location ? (globalThis.location.href = `https://wa.me/91${log.tuition?.parent?.phone_number}`) : null)} className="bg-slate-900 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase hover:bg-blue-600 transition">Audit Call</button>
+                                 <button onClick={() => window.open(`https://wa.me/91${log.tuition?.parent?.phone_number}`)} className="bg-slate-900 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase hover:bg-blue-600 transition">Audit Call</button>
                               </td>
                            </tr>
                         ))}
@@ -2026,7 +1764,7 @@ ${assignedTN}
                               <td className="py-4"><span className="bg-red-100 text-red-700 px-3 py-1 rounded-full text-[9px] font-black uppercase">{alert.official_status}</span></td>
                               <td className="py-4 text-xs font-bold text-slate-600">{alert.distance_meters}m Away</td>
                               <td className="py-4 text-right">
-                                 <button onClick={() => (typeof globalThis !== 'undefined' && typeof globalThis.open === 'function') ? globalThis.open(`https://wa.me/91${alert.teacher_phone}`, '_blank', 'noopener,noreferrer') : (typeof globalThis !== 'undefined' && globalThis.location ? (globalThis.location.href = `https://wa.me/91${alert.teacher_phone}`) : null)} className="bg-slate-900 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase transition hover:bg-blue-600">Investigate</button>
+                                 <button onClick={() => window.open(`https://wa.me/91${alert.teacher_phone}`)} className="bg-slate-900 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase transition hover:bg-blue-600">Investigate</button>
                               </td>
                            </tr>
                         ))}
@@ -2100,7 +1838,7 @@ ${inq.tuition_no || 'TN-PENDING'}
                         {tuitionDetailsText}
                       </pre>
                       <button 
-                        onClick={() => navigator.clipboard?.writeText?.(tuitionDetailsText).then(() => uiNotify.alert('Copied!'))}
+                        onClick={() => navigator.clipboard.writeText(tuitionDetailsText).then(() => alert('Copied!'))}
                         className="mt-2 text-[9px] bg-blue-50 text-blue-600 px-2 py-1 rounded hover:bg-blue-100 font-bold uppercase"
                       >Copy Text</button>
                     </details>
@@ -2176,7 +1914,7 @@ Distance from Parent : ${distance}`.trim();
                           <div className="text-right">
                              <span className={`text-[9px] font-black px-2 py-0.5 rounded uppercase ${pendingFees > 0 ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'}`}>Fee: {feeStatus}</span>
                              {mapUrl ? (
-                               <a href={mapUrl} target="_blank" rel="noopener noreferrer" className="text-[9px] font-bold text-blue-500 mt-1 hover:underline block">
+                               <a href={mapUrl} target="_blank" rel="noreferrer" className="text-[9px] font-bold text-blue-500 mt-1 hover:underline block">
                                  Dist: {distance} 🗺️
                                </a>
                              ) : (
@@ -2379,7 +2117,7 @@ Distance from Parent : ${distance}`.trim();
                 <div className="w-full">
                   <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Featured Image</label>
                   <input type="file" accept="image/*" onChange={e => setBlogImageFile(e.target.files[0])} className="w-full p-2 bg-slate-50 rounded-xl text-sm border" />
-                  {editingBlog.image_url && !blogImageFile && <p className="text-xs text-green-600 mt-1">Current image: <a href={editingBlog.image_url} target="_blank" rel="noopener noreferrer" className="underline">View</a></p>}
+                  {editingBlog.image_url && !blogImageFile && <p className="text-xs text-green-600 mt-1">Current image: <a href={editingBlog.image_url} target="_blank" rel="noreferrer" className="underline">View</a></p>}
                 </div>
                 <textarea placeholder="Short Description" className="w-full p-3 border rounded-xl" rows="2" value={editingBlog.description || ''} onChange={e => setEditingBlog({...editingBlog, description: e.target.value})} required></textarea>
                 <textarea placeholder="Content (HTML or Text)" className="w-full p-3 border rounded-xl font-mono text-sm" rows="10" value={editingBlog.content || ''} onChange={e => setEditingBlog({...editingBlog, content: e.target.value})} required></textarea>
@@ -2731,11 +2469,8 @@ Distance from Parent : ${distance}`.trim();
 
         {/* MODAL FOR TEACHER HISTORY */}
         {showHistoryModal && (
-          <div onClick={() => setShowHistoryModal(false)} className="fixed inset-0 z-[300] bg-slate-900/60 backdrop-blur-sm flex justify-end">
-            <div onClick={(e) => e.stopPropagation()} className="w-full max-w-xl bg-white h-full shadow-2xl p-10 overflow-y-auto animate-in slide-in-from-right duration-500 flex flex-col relative">
-              <button aria-label="Close history" onClick={() => setShowHistoryModal(false)} className="absolute top-4 right-4 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-full p-2 shadow">
-                <span style={{fontSize:16,fontWeight:800}}>✕</span>
-              </button>
+          <div className="fixed inset-0 z-[300] bg-slate-900/60 backdrop-blur-sm flex justify-end">
+            <div className="w-full max-w-xl bg-white h-full shadow-2xl p-10 overflow-y-auto animate-in slide-in-from-right duration-500 flex flex-col">
               <div className="flex justify-between items-center mb-8 border-b pb-4">
                 <button onClick={() => setShowHistoryModal(false)} className="text-slate-400 font-black hover:text-red-500 transition">CLOSE</button>
                 <button onClick={() => setShowHistoryModal(false)} className="text-slate-400 hover:text-red-500 transition">
@@ -2773,109 +2508,6 @@ Distance from Parent : ${distance}`.trim();
                   onClick={handleBanTeacher}
                   className="w-full bg-red-600 text-white py-4 rounded-2xl font-black uppercase tracking-widest text-xs shadow-xl hover:bg-red-700 transition"
                  >PERMANENTLY BAN TEACHER</button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* MODAL FOR TEACHER PROFILE / DETAILS */}
-        {showTeacherModal && (
-          <div onClick={() => setShowTeacherModal(false)} className="fixed inset-0 z-[320] bg-slate-900/60 backdrop-blur-sm flex justify-end">
-            <div onClick={(e) => e.stopPropagation()} className="w-full max-w-lg bg-white h-full shadow-2xl p-8 overflow-y-auto animate-in slide-in-from-right duration-500 flex flex-col relative">
-              <button aria-label="Close details" onClick={() => setShowTeacherModal(false)} className="absolute top-4 right-4 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-full p-2 shadow">
-                <span style={{fontSize:16,fontWeight:800}}>✕</span>
-              </button>
-              <div className="mb-6 border-b pb-4">
-                <h3 className="text-2xl font-black text-slate-900">Teacher Details</h3>
-                <p className="text-sm text-slate-500">Full profile and metadata</p>
-              </div>
-              <div className="flex-1 space-y-4">
-                {selectedTeacherProfile ? (
-                  <div>
-                    <div className="flex items-center gap-4">
-                      {selectedTeacherProfile.photo_url ? (
-                        <SignedImg path={selectedTeacherProfile.photo_url} alt={selectedTeacherProfile.full_name} className="w-24 h-24 rounded-full object-cover" />
-                      ) : (
-                        <div className="w-24 h-24 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 font-bold">No Photo</div>
-                      )}
-                      <div>
-                        <h4 className="text-lg font-black">{selectedTeacherProfile.full_name}</h4>
-                        <div className="text-sm text-slate-500">{selectedTeacherProfile.email}</div>
-                        <div className="text-sm text-slate-500">{selectedTeacherProfile.phone_number}</div>
-                        <div className="text-xs text-slate-400">Joined: {selectedTeacherProfile.created_at ? new Date(selectedTeacherProfile.created_at).toLocaleDateString() : 'N/A'}</div>
-                      </div>
-                    </div>
-
-                    <div className="mt-6 grid grid-cols-1 gap-4">
-                      <div>
-                        <h5 className="text-xs font-black uppercase text-slate-400">Bio</h5>
-                        <p className="text-sm text-slate-700">{selectedTeacherProfile.bio || 'No bio provided.'}</p>
-                      </div>
-                      {Array.isArray(selectedTeacherProfile.teacher_details) ? (
-                        selectedTeacherProfile.teacher_details.map((d, idx) => (
-                          <div key={idx} className="p-4 bg-slate-50 rounded-lg border">
-                            <div className="text-sm text-slate-600">Subjects: {d.subjects || 'N/A'}</div>
-                            <div className="text-sm text-slate-600">Experience: {d.experience_years || d.experience || 'N/A'}</div>
-                            <div className="text-sm text-slate-600">Qualifications: {d.qualifications || d.degree || 'N/A'}</div>
-                            <div className="text-sm text-slate-600">Location: {d.location || d.city || 'N/A'}</div>
-                          </div>
-                        ))
-                      ) : selectedTeacherProfile.teacher_details ? (
-                        <div className="p-4 bg-slate-50 rounded-lg border">
-                          <div className="text-sm text-slate-600">Subjects: {selectedTeacherProfile.teacher_details.subjects || 'N/A'}</div>
-                          <div className="text-sm text-slate-600">Experience: {selectedTeacherProfile.teacher_details.experience_years || selectedTeacherProfile.teacher_details.experience || 'N/A'}</div>
-                          <div className="text-sm text-slate-600">Qualifications: {selectedTeacherProfile.teacher_details.qualifications || selectedTeacherProfile.teacher_details.degree || 'N/A'}</div>
-                          <div className="text-sm text-slate-600">Location: {selectedTeacherProfile.teacher_details.location || selectedTeacherProfile.teacher_details.city || 'N/A'}</div>
-                        </div>
-                      ) : null}
-                    </div>
-                  </div>
-                ) : (
-                  <div>Loading...</div>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* MODAL FOR PARENT PROFILE / DETAILS */}
-        {showParentModal && (
-          <div onClick={() => setShowParentModal(false)} className="fixed inset-0 z-[320] bg-slate-900/60 backdrop-blur-sm flex justify-end">
-            <div onClick={(e) => e.stopPropagation()} className="w-full max-w-lg bg-white h-full shadow-2xl p-8 overflow-y-auto animate-in slide-in-from-right duration-500 flex flex-col relative">
-              <button aria-label="Close details" onClick={() => setShowParentModal(false)} className="absolute top-4 right-4 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-full p-2 shadow">
-                <span style={{fontSize:16,fontWeight:800}}>✕</span>
-              </button>
-              <div className="mb-6 border-b pb-4">
-                <h3 className="text-2xl font-black text-slate-900">Parent Details</h3>
-                <p className="text-sm text-slate-500">Profile and contact information</p>
-              </div>
-              <div className="flex-1 space-y-4">
-                {selectedParentProfile ? (
-                  <div>
-                    <div className="flex items-center gap-4">
-                      <div className="w-24 h-24 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 font-bold">P</div>
-                      <div>
-                        <h4 className="text-lg font-black">{selectedParentProfile.full_name}</h4>
-                        <div className="text-sm text-slate-500">{selectedParentProfile.email}</div>
-                        <div className="text-sm text-slate-500">{selectedParentProfile.phone_number}</div>
-                        <div className="text-xs text-slate-400">Joined: {selectedParentProfile.created_at ? new Date(selectedParentProfile.created_at).toLocaleDateString() : 'N/A'}</div>
-                      </div>
-                    </div>
-
-                    <div className="mt-6 grid grid-cols-1 gap-4">
-                      <div>
-                        <h5 className="text-xs font-black uppercase text-slate-400">Address / Zone</h5>
-                        <p className="text-sm text-slate-700">{selectedParentProfile.address || selectedParentProfile.admin_zone || 'N/A'}</p>
-                      </div>
-                      <div>
-                        <h5 className="text-xs font-black uppercase text-slate-400">Notes</h5>
-                        <p className="text-sm text-slate-700">{selectedParentProfile.notes || 'No notes available.'}</p>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <div>Loading...</div>
-                )}
               </div>
             </div>
           </div>
@@ -2971,8 +2603,8 @@ Distance from Parent : ${distance}`.trim();
               </div>
               
               <div className="bg-blue-50 p-4 rounded-2xl mb-6 flex items-center gap-4">
-                  <div className="w-12 h-12 bg-white rounded-full overflow-hidden border-2 border-blue-200">
-                  <SignedImg path={selectedTeacherForScore?.teacher_details?.photo_url} className="w-full h-full object-cover" />
+                <div className="w-12 h-12 bg-white rounded-full overflow-hidden border-2 border-blue-200">
+                  <img src={selectedTeacherForScore?.teacher_details?.photo_url || 'https://placehold.co/100'} className="w-full h-full object-cover" />
                 </div>
                 <div>
                   <h4 className="font-black text-lg text-blue-900">{selectedTeacherForScore?.full_name}</h4>

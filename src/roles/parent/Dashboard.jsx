@@ -1,17 +1,11 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../shared/utils/supabaseClient';
 import Header from '../../shared/components/Header';
-import sanitizeHtml from '../../shared/utils/sanitizeHtml';
-import logger from '../../shared/utils/logger';
 // NEW: Import the Location Guard for mandatory GPS pinning
 import LocationGuard from '../../shared/components/LocationGuard';
 import useLocationTracker from '../../hooks/useLocationTracker';
 import { getAssignedAdmin } from '../../shared/utils/adminAssignment';
-import SignedImg from '../../shared/components/SignedImg';
-import uiNotify from '../../shared/utils/uiNotify';
-
-const DEFAULT_ADMIN_PHONES = { 'Admin 1': '8188005373', 'Admin 2': '8756525373' };
 
 export default function ParentDashboard() {
   const navigate = useNavigate();
@@ -19,7 +13,7 @@ export default function ParentDashboard() {
   const [tuitions, setTuitions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
-  const [feedbacks, setFeedbacks] = useState({});
+  const [feedbackText, setFeedbackText] = useState("");
   
   // NEW: Payment States
   const [isPayModalOpen, setIsPayModalOpen] = useState(false);
@@ -27,7 +21,6 @@ export default function ParentDashboard() {
 
   // NEW: Identity Reveal States
   const [verifiedTeacher, setVerifiedTeacher] = useState(null);
-  const [verifiedTeacherSigned, setVerifiedTeacherSigned] = useState(null);
 
   // NEW: Review States
   const [showReviewModal, setShowReviewModal] = useState(false);
@@ -48,7 +41,7 @@ export default function ParentDashboard() {
   const [message, setMessage] = useState({ type: '', text: '' });
   const [payments, setPayments] = useState([]);
   const [guidelines, setGuidelines] = useState('');
-  const [adminPhones, setAdminPhones] = useState(DEFAULT_ADMIN_PHONES);
+  const [adminPhones, setAdminPhones] = useState({ 'Admin 1': '8188005373', 'Admin 2': '8756525373' });
   const [paymentSettings, setPaymentSettings] = useState({ upiId: '', qrCodeUrl: '' });
 
   // NEW: Profile Edit State
@@ -56,14 +49,20 @@ export default function ParentDashboard() {
   const [editProfileData, setEditProfileData] = useState({ 
     mother_phone: '', 
     father_phone: '', 
-    secondary_phone: '',
-    whatsapp_opt_in: true
+    secondary_phone: '' 
   });
 
   // Track location automatically
   useLocationTracker(profile?.id, profile?.user_role);
 
-  const triggerHolidayAlert = useCallback(async () => {
+  useEffect(() => {
+    fetchParentData();
+    triggerHolidayAlert(); // NEW: Automatic Holiday Reminder
+    fetchSystemSettings();
+  }, []);
+
+  // NEW: Automatic Holiday Alert Logic
+  async function triggerHolidayAlert() {
     try {
       const tomorrow = new Date();
       tomorrow.setDate(tomorrow.getDate() + 1);
@@ -79,31 +78,27 @@ export default function ParentDashboard() {
         setMessage({ type: 'info', text: `🔔 HOLIDAY ALERT: Tomorrow (${new Date(data.date).toDateString()}) is a holiday for ${data.event_name}.` });
       }
     } catch (err) {
-      // Holiday Alert Error
+      console.error("Holiday Alert Error:", err);
     }
-  }, []);
+  }
 
-  const fetchSystemSettings = useCallback(async () => {
-    try {
-      const { data } = await supabase.from('system_settings').select('*');
-      if (data) {
-        const phones = { ...DEFAULT_ADMIN_PHONES };
-        const p1 = data.find(s => s.key === 'admin_1_phone')?.value;
-        const p2 = data.find(s => s.key === 'admin_2_phone')?.value;
-        if (p1) phones['Admin 1'] = p1;
-        if (p2) phones['Admin 2'] = p2;
-        
-        const upi = data.find(s => s.key === 'upi_id')?.value;
-        const qr = data.find(s => s.key === 'qr_code_url')?.value;
-        setPaymentSettings({ upiId: upi, qrCodeUrl: qr });
-        setAdminPhones(phones);
-      }
-    } catch (err) {
-      // ignore
+  async function fetchSystemSettings() {
+    const { data } = await supabase.from('system_settings').select('*');
+    if (data) {
+      const phones = { ...adminPhones };
+      const p1 = data.find(s => s.key === 'admin_1_phone')?.value;
+      const p2 = data.find(s => s.key === 'admin_2_phone')?.value;
+      if (p1) phones['Admin 1'] = p1;
+      if (p2) phones['Admin 2'] = p2;
+      
+      const upi = data.find(s => s.key === 'upi_id')?.value;
+      const qr = data.find(s => s.key === 'qr_code_url')?.value;
+      setPaymentSettings({ upiId: upi, qrCodeUrl: qr });
+      setAdminPhones(phones);
     }
-  }, []);
+  }
 
-  const fetchParentData = useCallback(async () => {
+  async function fetchParentData() {
     setLoading(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -119,8 +114,7 @@ export default function ParentDashboard() {
         setEditProfileData({
           mother_phone: profileData.mother_phone || '',
           father_phone: profileData.father_phone || '',
-          secondary_phone: profileData.secondary_phone || '',
-          whatsapp_opt_in: typeof profileData.whatsapp_opt_in === 'boolean' ? profileData.whatsapp_opt_in : true
+          secondary_phone: profileData.secondary_phone || ''
         });
       }
 
@@ -176,21 +170,16 @@ export default function ParentDashboard() {
         .order('created_at', { ascending: false });
 
       if (payError) {
-        logger.error("Error fetching payment history:", payError);
+        console.error("Error fetching payment history:", payError);
       }
+      console.log("Fetched Payment Data:", payData); // Log the data
       setPayments(payData || []);
     } catch (err) {
-      // Dashboard Load Error
+      console.error("Dashboard Load Error:", err);
     } finally {
       setLoading(false);
     }
-  }, []);
-
-  useEffect(() => {
-    fetchParentData();
-    triggerHolidayAlert(); // NEW: Automatic Holiday Reminder
-    fetchSystemSettings();
-  }, [fetchParentData, triggerHolidayAlert, fetchSystemSettings]);
+  }
 
   // NEW: Real-time subscription for Demo Start
   useEffect(() => {
@@ -205,7 +194,7 @@ export default function ParentDashboard() {
            // or we can check if the tuition_id exists in our current 'tuitions' state.
            const relevantTuition = tuitions.find(t => t.id === payload.new.tuition_id);
            if (relevantTuition) {
-               uiNotify.alert(`🔔 DEMO STARTED: The teacher has arrived and started the demo for ${relevantTuition.subject}.`);
+               alert(`🔔 DEMO STARTED: The teacher has arrived and started the demo for ${relevantTuition.subject}.`);
                fetchParentData(); // Refresh to update UI
            }
         }
@@ -224,10 +213,10 @@ export default function ParentDashboard() {
   };
 
   const handleRejectTeacher = async (applicationId, tuitionId) => {
-    const reason = uiNotify.prompt("Please provide a reason for requesting a replacement (e.g., Teaching style not matching, Scheduling conflict):");
+    const reason = prompt("Please provide a reason for requesting a replacement (e.g., Teaching style not matching, Scheduling conflict):");
     if (!reason) return;
 
-    if (!uiNotify.confirm("Are you sure you want to reject this teacher and request a new one?")) return;
+    if (!window.confirm("Are you sure you want to reject this teacher and request a new one?")) return;
 
     setLoading(true);
     try {
@@ -242,10 +231,10 @@ export default function ParentDashboard() {
       // 3. Notify Admin via Support Ticket
       await supabase.from('support_tickets').insert({ user_id: profile.id, tuition_id: tuitionId, issue_description: `Teacher Rejected by Parent. Reason: ${reason}. Requesting replacement.`, status: 'open' });
 
-      uiNotify.alert("Request submitted. We will assign a new teacher shortly.");
+      alert("Request submitted. We will assign a new teacher shortly.");
       fetchParentData();
     } catch (error) {
-      uiNotify.alert("Error: " + error.message);
+      alert("Error: " + error.message);
     } finally {
       setLoading(false);
     }
@@ -266,7 +255,7 @@ export default function ParentDashboard() {
             assigned_admin_id: assignedAdminId
         }).eq('id', profile.id);
 
-        uiNotify.alert("Profile updated successfully!");
+        alert("Profile updated successfully!");
         setShowOnboarding(false);
         fetchParentData();
         
@@ -276,7 +265,7 @@ export default function ParentDashboard() {
         // Fetch fresh data in background
         setTimeout(fetchParentData, 1500);
     } catch (error) {
-        uiNotify.alert("Error updating profile: " + error.message);
+        alert("Error updating profile: " + error.message);
     } finally {
         setLoading(false);
     }
@@ -285,7 +274,7 @@ export default function ParentDashboard() {
   // NEW: Handle Phone Onboarding & Sync
   const handlePhoneOnboardingSubmit = async (e) => {
     e.preventDefault();
-    if (!onboardingPhone || onboardingPhone.length < 10) return uiNotify.alert("Please enter a valid phone number.");
+    if (!onboardingPhone || onboardingPhone.length < 10) return alert("Please enter a valid phone number.");
     setLoading(true);
     try {
         // 1. Update Profile
@@ -307,15 +296,15 @@ export default function ParentDashboard() {
                 await supabase.from('tuitions').update({ parent_id: profile.id }).eq('phone_number', ph).is('parent_id', null);
             } catch (err) { 
                 // Ignore if column doesn't exist or other error, as this is a best-effort sync
-                // Tuition sync skipped
+                console.warn("Tuition sync skipped", err); 
             }
         }
 
-        uiNotify.alert("Phone number saved! Any existing requests have been linked to your account.");
+        alert("Phone number saved! Any existing requests have been linked to your account.");
         setShowPhoneOnboarding(false);
         fetchParentData();
     } catch (error) {
-        uiNotify.alert("Error: " + error.message);
+        alert("Error: " + error.message);
     } finally {
         setLoading(false);
     }
@@ -327,37 +316,30 @@ export default function ParentDashboard() {
     try {
         const { error } = await supabase.from('profiles').update(editProfileData).eq('id', profile.id);
         if (error) throw error;
-        uiNotify.alert("Profile updated successfully!");
+        alert("Profile updated successfully!");
         setIsEditingProfile(false);
         fetchParentData();
     } catch (error) {
-        uiNotify.alert("Error updating profile: " + error.message);
+        alert("Error updating profile: " + error.message);
     } finally {
         setLoading(false);
     }
   };
 
   // NEW: Identity Verification Logic
-  const handleVerifyIdentity = async (applicationObj) => {
+  const handleVerifyIdentity = (applicationObj) => {
     const details = getTeacherDetails(applicationObj.teacher);
     if (details?.is_selfie_approved) {
-      setVerifiedTeacher({ name: applicationObj.teacher.full_name, photo: details.photo_url });
-      // fetch signed URL
-      try {
-        const { default: getSignedUrl } = await import('../../shared/utils/getSignedUrl');
-        const signed = await getSignedUrl(details.photo_url);
-        setVerifiedTeacherSigned(signed || details.photo_url);
-      } catch (err) {
-        // Could not fetch signed URL for verified teacher
-        setVerifiedTeacherSigned(details.photo_url);
-      }
+      setVerifiedTeacher({
+        name: applicationObj.teacher.full_name,
+        photo: details.photo_url
+      });
     } else {
-      uiNotify.alert("Verification Pending: This teacher's ID is still being audited by the Bureau.");
+      alert("Verification Pending: This teacher's ID is still being audited by the Bureau.");
     }
   };
 
-  async function confirmTeacher(applicationId, tuitionId) {
-    const feedback = feedbacks[applicationId] || '';
+  async function confirmTeacher(applicationId, tuitionId, feedback) {
     const { error: appError } = await supabase
       .from('applications')
       .update({ 
@@ -373,16 +355,16 @@ export default function ParentDashboard() {
       .eq('id', tuitionId);
 
     if (!appError && !tuiError) {
-      uiNotify.alert("Congratulations! Your tuition is now officially confirmed.");
+      alert("Congratulations! Your tuition is now officially confirmed.");
       fetchParentData(); 
-      setFeedbacks(prev => ({ ...prev, [applicationId]: '' }));
+      setFeedbackText("");
     } else {
-      uiNotify.alert("Error confirming teacher. Please contact Admin.");
+      alert("Error confirming teacher. Please contact Admin.");
     }
   }
 
   const handleReportIssue = async (tuitionId) => {
-    const issue = uiNotify.prompt("Please describe the issue with this tuition:") || '';
+    const issue = prompt("Please describe the issue with this tuition:");
     if (issue) {
       const { error } = await supabase.from('support_tickets').insert({
         user_id: profile.id,
@@ -390,8 +372,8 @@ export default function ParentDashboard() {
         issue_description: issue,
         status: 'open'
       });
-      if (error) uiNotify.alert("Error reporting issue: " + error.message);
-      else uiNotify.alert("Issue reported successfully. Admin will contact you shortly.");
+      if (error) alert("Error reporting issue: " + error.message);
+      else alert("Issue reported successfully. Admin will contact you shortly.");
     }
   };
 
@@ -404,7 +386,7 @@ export default function ParentDashboard() {
   };
 
   const submitReview = async () => {
-    if (!reviewData.comment) return uiNotify.alert("Please write a short review.");
+    if (!reviewData.comment) return alert("Please write a short review.");
     
     const ratingValues = Object.values(ratings);
     const avgRating = ratingValues.length > 0 
@@ -422,9 +404,9 @@ export default function ParentDashboard() {
       type: 'parent_to_teacher'
     });
     setLoading(false);
-    if (error) uiNotify.alert("Error submitting review: " + error.message);
+    if (error) alert("Error submitting review: " + error.message);
     else {
-      uiNotify.alert("Review submitted successfully!");
+      alert("Review submitted successfully!");
       setShowReviewModal(false);
     }
   };
@@ -516,7 +498,7 @@ export default function ParentDashboard() {
             <p className="text-[10px] text-slate-400 font-bold uppercase mb-6 tracking-widest">Param Tuitions Safety Check</p>
             
             <div className="w-48 h-48 mx-auto mb-6 rounded-3xl overflow-hidden border-4 border-slate-50 shadow-lg group">
-              <SignedImg path={verifiedTeacherSigned || verifiedTeacher.photo} className="w-full h-full object-cover" alt="Verified Tutor" />
+              <img src={verifiedTeacher.photo} className="w-full h-full object-cover" alt="Verified Tutor" />
             </div>
             
             <p className="text-lg font-black text-slate-800 uppercase leading-none">{verifiedTeacher.name}</p>
@@ -655,12 +637,6 @@ export default function ParentDashboard() {
                                     <label className="text-[10px] font-bold text-slate-400 uppercase">Secondary Mobile</label>
                                     <input type="text" className="w-full p-2 border rounded-lg text-sm font-bold" value={editProfileData.secondary_phone} onChange={e => setEditProfileData({...editProfileData, secondary_phone: e.target.value})} />
                                 </div>
-                                <div>
-                                  <label className="inline-flex items-center gap-3 mt-1">
-                                    <input type="checkbox" checked={!!editProfileData.whatsapp_opt_in} onChange={e => setEditProfileData({...editProfileData, whatsapp_opt_in: e.target.checked})} />
-                                    <span className="text-[12px] font-bold text-slate-600">Receive WhatsApp notifications (booking, demo, reminders)</span>
-                                  </label>
-                                </div>
                                 <button onClick={handleSaveProfile} className="w-full bg-blue-600 text-white py-2 rounded-xl font-bold text-xs uppercase">Save Details</button>
                             </div>
                         ) : (
@@ -687,7 +663,7 @@ export default function ParentDashboard() {
                           <a href={`tel:${currentAdminPhone}`} className="flex-1 block text-center bg-white text-indigo-900 py-2 rounded-xl font-bold text-sm hover:bg-indigo-50 transition">
                             <i className="fas fa-phone-alt mr-1"></i> Call
                           </a>
-                          <a href={`https://wa.me/91${currentAdminPhone}`} target="_blank" rel="noopener noreferrer" className="flex-1 block text-center bg-green-500 text-white py-2 rounded-xl font-bold text-sm hover:bg-green-600 transition">
+                          <a href={`https://wa.me/91${currentAdminPhone}`} target="_blank" rel="noreferrer" className="flex-1 block text-center bg-green-500 text-white py-2 rounded-xl font-bold text-sm hover:bg-green-600 transition">
                             <i className="fab fa-whatsapp mr-1"></i> Chat
                           </a>
                         </div>
@@ -756,9 +732,9 @@ export default function ParentDashboard() {
                                     return (
                                     <div key={app.id} className="p-4 rounded-2xl bg-slate-50 border flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                                     <div className="flex items-center gap-4 cursor-pointer" onClick={() => handleVerifyIdentity(app)}>
-                                                    <div className="w-12 h-12 rounded-xl bg-slate-200 overflow-hidden border border-slate-200">
-                                                      <SignedImg path={teacherDetails?.photo_url} alt="Tutor" className="w-full h-full object-cover" />
-                                                      </div>
+                                        <div className="w-12 h-12 rounded-xl bg-slate-200 overflow-hidden border border-slate-200">
+                                        <img src={teacherDetails?.photo_url || 'https://placehold.co/150'} alt="Tutor" className="w-full h-full object-cover" />
+                                        </div>
                                         <div>
                                         <p className="font-bold text-slate-800 text-sm">{app.teacher?.full_name || 'Assigned Teacher'}</p>
                                         <p className="text-[11px] text-blue-500 font-bold uppercase tracking-tighter">Click to Verify ID</p>
@@ -768,17 +744,16 @@ export default function ParentDashboard() {
                                     {['demo_allotted', 'DEMO_SCHEDULED', 'DEMO_POSTPONED', 'DEMO_COMPLETED', 'booked', 'BOOKED', 'demo_started'].includes(app.status) && tui.status !== 'confirmed' && (
                                         <div className="flex-1 max-w-xs space-y-2">
                                         <input 
-                                          type="text" 
-                                          placeholder="Write small feedback..." 
-                                          className="w-full p-2 text-xs border rounded-lg focus:ring-1 focus:ring-blue-500 outline-none"
-                                          value={feedbacks[app.id] || ''}
-                                          onChange={(e) => setFeedbacks(prev => ({ ...prev, [app.id]: e.target.value }))}
+                                            type="text" 
+                                            placeholder="Write small feedback..." 
+                                            className="w-full p-2 text-xs border rounded-lg focus:ring-1 focus:ring-blue-500 outline-none"
+                                            onChange={(e) => setFeedbackText(e.target.value)}
                                         />
                                         <div className="flex gap-2">
                                             <button onClick={() => handleRejectTeacher(app.id, tui.id)} className="flex-1 bg-red-100 text-red-600 py-2 rounded-xl text-[10px] font-bold hover:bg-red-200 transition">
                                                 Reject / Replace
                                             </button>
-                                            <button onClick={() => confirmTeacher(app.id, tui.id)} className="flex-1 bg-green-600 text-white py-2 rounded-xl text-[10px] font-bold shadow-md hover:bg-green-700 transition">
+                                            <button onClick={() => confirmTeacher(app.id, tui.id, feedbackText)} className="flex-1 bg-green-600 text-white py-2 rounded-xl text-[10px] font-bold shadow-md hover:bg-green-700 transition">
                                                 Confirm Teacher
                                             </button>
                                         </div>
@@ -868,7 +843,7 @@ export default function ParentDashboard() {
                     <h2 className="text-2xl font-black text-slate-800 uppercase italic tracking-tight">Parent Guidelines</h2>
                     <div className="bg-white p-8 rounded-[32px] shadow-sm border border-slate-100 space-y-6">
                         {guidelines ? (
-                            <div className="prose prose-slate max-w-none" dangerouslySetInnerHTML={{ __html: sanitizeHtml(guidelines) }} />
+                            <div className="prose prose-slate max-w-none" dangerouslySetInnerHTML={{ __html: guidelines }} />
                         ) : (
                             <>
                                 <div className="mb-6">
@@ -969,7 +944,7 @@ export default function ParentDashboard() {
       <a href={`tel:${currentAdminPhone}`} className="fixed bottom-4 left-4 z-50 bg-blue-600 text-white p-3 rounded-full shadow-lg hover:bg-blue-700 transition-transform hover:scale-110 flex items-center justify-center w-12 h-12 md:w-14 md:h-14 md:bottom-8 md:left-8 border-2 border-white">
         <i className="fas fa-phone-alt text-lg md:text-xl"></i>
       </a>
-      <a href={`https://wa.me/91${currentAdminPhone}`} target="_blank" rel="noopener noreferrer" className="fixed bottom-4 right-4 z-50 bg-green-500 text-white p-3 rounded-full shadow-lg hover:bg-green-600 transition-transform hover:scale-110 flex items-center justify-center w-12 h-12 md:w-14 md:h-14 md:bottom-8 md:right-8 border-2 border-white">
+      <a href={`https://wa.me/91${currentAdminPhone}`} target="_blank" rel="noreferrer" className="fixed bottom-4 right-4 z-50 bg-green-500 text-white p-3 rounded-full shadow-lg hover:bg-green-600 transition-transform hover:scale-110 flex items-center justify-center w-12 h-12 md:w-14 md:h-14 md:bottom-8 md:right-8 border-2 border-white">
         <i className="fab fa-whatsapp text-2xl md:text-3xl"></i>
       </a>
     </>

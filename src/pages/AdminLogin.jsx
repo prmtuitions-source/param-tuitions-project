@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../shared/utils/supabaseClient';
-import uiNotify from '../shared/utils/uiNotify';
 
 const AdminLogin = () => {
   const [email, setEmail] = useState('');
@@ -19,6 +18,7 @@ const AdminLogin = () => {
       if (error) throw error;
 
       if (data.user) {
+        // CHECK: Is this user actually an Admin in our database?
         const { data: profile, error: profileError } = await supabase
           .from('profiles')
           .select('user_role')
@@ -28,16 +28,17 @@ const AdminLogin = () => {
         if (profileError) throw profileError;
 
         if (profile.user_role === 'super_admin') {
-          navigate('/super-admin/dashboard', { replace: true });
+          navigate('/super-admin-dashboard', { replace: true });
         } else if (profile.user_role === 'admin') {
-          navigate('/admin/dashboard', { replace: true });
+          navigate('/admin-dashboard', { replace: true });
         } else {
           await supabase.auth.signOut();
-            uiNotify.alert("Access Denied: You are not an Admin.");
+          alert("Access Denied: You are not an Admin.");
         }
       }
     } catch (error) {
-      uiNotify.alert(error.message || "Failed to login");
+      console.error('Login error:', error);
+      alert(error.message || "Failed to login");
     } finally {
       setLoading(false);
     }
