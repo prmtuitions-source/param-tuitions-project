@@ -6,7 +6,12 @@ export default function ScrollToTop() {
   const { pathname } = useLocation();
 
   useEffect(() => {
-    window.scrollTo(0, 0);
+    if (typeof globalThis !== 'undefined' && typeof globalThis.scrollTo === 'function') {
+      globalThis.scrollTo(0, 0);
+    } else if (typeof document !== 'undefined') {
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+    }
   }, [pathname]);
 
   return null;

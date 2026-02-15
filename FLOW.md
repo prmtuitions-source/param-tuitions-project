@@ -1,103 +1,80 @@
-# Param Tuitions - System Flow Documentation
+# Param Tuitions - System Architecture & Flows
 
-## 1. User Roles & Permissions
-*   **Visitor:** Can view Home, About, Blog, Contact, and search for tutors. Can post inquiries.
-*   **Parent:** Can manage inquiries, view allotted teachers, verify teacher identity, pay fees, and track attendance.
-*   **Teacher:** Can view jobs, apply, manage active tuitions, mark attendance, and upload verification details.
-*   **Institute:** Can request bulk teachers (simplified flow).
-*   **Admin (Branch):** Manages a specific zone (e.g., "Admin 1"). Handles leads, demos, and teachers in that zone.
-*   **Super Admin:** Global access. Manages master data, settings, content, and all zones.
+## 1. Authentication Flow
+**Entry Point:** `/login` (`src/pages/Login.js`)
 
-## 2. Core Workflows
+1.  **User Action:** User enters credentials or uses Google Login.
+2.  **Supabase Auth:** `supabase.auth.signInWithPassword` or `signInWithOAuth`.
+3.  **Profile Handling:**
+    *   The system checks the `profiles` table for the user's ID.
+    *   **Role Assignment:**
+        *   If a specific role is selected (e.g., "Teacher") and the user was previously a "Parent", the system attempts to upgrade the role in the `profiles` table.
+        *   If no profile exists (first-time login), a new profile is upserted.
+4.  **Redirection:**
+    *   User is navigated to `/dashboard`.
+    *   **`LoginRedirect.js` Component:** Intercepts `/dashboard`.
+        *   Fetches the user's role from Supabase.
+        *   **Self-Healing:** If the profile is missing (race condition), it retries or creates a fallback profile.
+        *   **Routing:**
+            *   `super_admin` -> `/super-admin/dashboard`
+            *   `admin` -> `/admin/dashboard`
+            *   `teacher` -> `/teacher/dashboard`
+            *   `parent` -> `/parent/dashboard`
+            *   `institute` -> `/institute-dashboard`
 
-### A. Teacher Onboarding
-1.  **Registration:** Teacher signs up via `/teacher-register` (Email/Phone).
-2.  **Profile Completion:**
-    *   Logs into `TeacherDashboard`.
-    *   **Step 1:** Fills Profile Details (Education, Experience).
-    *   **Step 2:** Uploads Documents (ID, Degree).
-    *   **Step 3:** Signs Agreement.
-3.  **Verification:**
-    *   Profile shows "Pending Approval".
-    *   **Admin Action:** Admin reviews details in `VerifyTeachers` page and clicks "Verify".
-    *   **Selfie:** Teacher uploads a selfie in Dashboard for ID Card generation.
-4.  **Active Status:** Once verified, Teacher can apply for jobs.
+## 2. Tuition Lifecycle Flow
 
-### B. Parent Inquiry & Tuition Creation
-1.  **Inquiry:**
-    *   Parent posts inquiry via Home Page form or `/post-inquiry`.
-    *   Data saved to `leads` table with status `pending_call`.
-2.  **Lead Processing (Admin):**
-    *   Admin sees lead in "New Leads" tab.
-    *   Admin calls parent to verify requirements.
-    *   Admin clicks "Process Lead" -> "Post Official Tuition".
-    *   **Result:** A `tuition` record is created (Status: `open`), and a Tuition Number (TN) is assigned.
+### Phase 1: Inquiry & Lead Generation
+*   **Source:** Parents submit inquiries via `PostInquiry.js` or the Home Page form.
+*   **Data:** Stored in `leads` table (Status: `pending_call`).
+*   **Admin Action:**
+    *   Admin views leads in `AdminDashboard` -> "New Leads".
+    *   **Conversion:** Admin verifies details and clicks "Process Lead".
+    *   **Result:** A new record is created in the `tuitions` table (Status: `open`), and the lead is marked `converted`.
 
-### C. Matching & Booking (The Tuition Cycle)
-1.  **Application:**
-    *   Verified Teachers view `open` tuitions on `TeacherJobBoard`.
-    *   Teacher clicks "Apply". Record added to `applications` table.
-2.  **Selection (Admin):**
-    *   Admin views applicants in "Inquiry & Booking" tab.
-    *   Admin selects a teacher and clicks **"Book Teacher"**.
-    *   **Status Update:** Tuition & Application status -> `demo_allotted`.
-3.  **Demo Scheduling:**
-    *   Admin coordinates with Parent/Teacher.
-    *   Admin clicks "Schedule Demo" in Dashboard.
-    *   **Status Update:** Status -> `DEMO_SCHEDULED`.
-    *   Entry added to `demos` table (visible in Demo Manager).
-4.  **The Demo Class:**
-    *   **Teacher:** Sees "DEMO ALLOTTED" in Dashboard.
-    *   **Start:** Teacher clicks **"Start Tuition"** upon arrival. (Status -> `demo_started`, GPS/Time logged).
-    *   **Parent:** Receives notification/sees status change.
-    *   **Completion:** Teacher/Admin clicks "Mark Demo Completed". (Status -> `DEMO_COMPLETED`).
-5.  **Confirmation:**
-    *   Parent provides feedback.
-    *   Admin/Parent clicks **"Confirm Tuition"**.
-    *   **Status Update:** Status -> `confirmed`.
-    *   **Ledger:** Bureau commission is calculated (if triggers are set).
+### Phase 2: Matching & Application
+*   **Teacher View:** Teachers browse `open` tuitions on `TeacherJobBoard.js`.
+*   **Action:** Teacher clicks "Apply".
+*   **Data:** Record created in `applications` table (Status: `applied`).
 
-### D. Active Tuition Management
-1.  **Teacher:**
-    *   Tuition moves to "Active Control Rooms".
-    *   Teacher clicks "Progress Log" to access `TuitionControlRoom`.
-    *   **Attendance:** Teacher marks "Present" daily (Geo-fenced if configured).
-2.  **Parent:**
-    *   Tuition visible in "My Tuitions".
-    *   Can view "Progress Feed" (Attendance logs).
-    *   **Payments:** Parent clicks "Pay Fees" -> Scans QR -> Uploads Screenshot.
+### Phase 3: Booking & Demo
+*   **Admin Action:**
+    *   In `AdminDashboard` -> "Inquiry & Booking", Admin reviews applicants.
+    *   **Booking:** Admin clicks "Book Teacher".
+    *   **Updates:** `tuitions` and `applications` status -> `demo_allotted`.
+*   **Demo Scheduling:**
+    *   Admin schedules a demo (Date/Time).
+    *   **Data:** Record created in `demos` table (Status: `DEMO_SCHEDULED`).
+*   **Demo Execution:**
+    *   Teacher starts demo via Dashboard or `TeacherDemoPortal` (GPS Check-in).
+    *   Status updates to `demo_started` -> `DEMO_COMPLETED`.
 
-## 3. Dashboard Specifics
+### Phase 4: Confirmation
+*   **Action:** Parent or Admin confirms the tuition.
+*   **Updates:** `tuitions` and `applications` status -> `confirmed`.
+*   **Outcome:** Tuition moves to "Active Control Rooms".
 
-### Super Admin Dashboard
-*   **Overview:** Global stats, Financial Ledger (Revenue/Profit).
-*   **Master Data:** Manage Locations and Admin Zones.
-*   **System Settings:** Configure UPI ID, QR Code, Admin Phone Numbers.
-*   **Content Management:** Edit Blogs, Gallery, FAQs, Terms & Conditions.
-*   **Security:** View GPS Bypass alerts, Suspicious Cancellations.
-*   **Blacklist:** Block teachers/parents.
+## 3. Tuition Control Room
+**Route:** `/control-room/:tuitionId` (`src/pages/TuitionControlRoom.js`)
 
-### Admin Dashboard (Scoped)
-*   **Leads:** Manage raw inquiries for assigned Zone.
-*   **Matching Centre:** Filter teachers by radius/subject for a tuition.
-*   **Demo Manager:** Calendar view of upcoming demos.
-*   **My Teachers/Parents:** User directory for the zone.
+*   **Access:** Restricted to the assigned Teacher, the Parent, and Admins.
+*   **Functionality:**
+    *   **Attendance Marking:** Teachers can mark themselves "Present" for the current date.
+    *   **Attendance Log:** Displays a history of classes held (fetched from `tuition_attendance` table).
+    *   **Status View:** Shows current tuition status.
 
-### Teacher Dashboard
-*   **Job Board:** Browse/Apply for tuitions.
-*   **My Applications:** Track status of applied jobs.
-*   **Availability:** Set teaching hours.
-*   **ID Card:** Digital ID for verification.
-*   **Selfie Booth:** For identity verification.
+## 4. Key Components & Tables
 
-### Parent Dashboard
-*   **My Tuitions:** Status of current requests.
-*   **Payment History:** View past transactions.
-*   **Guidelines:** Bureau rules (Do's and Don'ts).
-*   **Identity Check:** Scan Teacher's QR code to verify identity.
+### Database Tables
+*   `profiles`: User data and roles.
+*   `leads`: Raw inquiries.
+*   `tuitions`: Structured tuition jobs.
+*   `applications`: Teacher applications for tuitions.
+*   `demos`: Scheduled demo classes.
+*   `tuition_attendance`: Daily attendance logs.
+*   `bureau_ledger`: Payment and revenue tracking.
 
-## 4. Database Status Codes
-*   **Leads:** `pending_call`, `converted`, `archived`.
-*   **Tuitions:** `open`, `demo_allotted`, `DEMO_SCHEDULED`, `DEMO_POSTPONED`, `demo_started`, `DEMO_COMPLETED`, `confirmed`, `cancelled`.
-*   **Applications:** `applied`, `demo_allotted`, `DEMO_SCHEDULED`, `demo_started`, `DEMO_COMPLETED`, `confirmed`, `rejected`.
-*   **Teacher Details:** `is_verified` (bool), `setup_completed` (bool).
+### Key Frontend Components
+*   `ProtectedRoute.js`: Enforces role-based access (RBAC).
+*   `LoginRedirect.js`: Central routing logic post-login.
+*   `DynamicFormRenderer.js`: Renders complex forms (Teacher Registration) from JSON configuration.

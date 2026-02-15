@@ -1,0 +1,4 @@
+.hero3d-wrapper { width:100%; height:480px; position:relative; }
+.hero3d-fullscreen { position:fixed; inset:0; z-index:0; pointer-events:none; }
+/* Small helper to ensure the canvas covers the wrapper */
+.hero3d-wrapper > div, .hero3d-fullscreen > div { width:100%; height:100%; }

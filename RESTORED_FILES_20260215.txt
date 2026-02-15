@@ -1,0 +1,110 @@
+Restored files snapshot — 2026-02-15
+
+Directory: src/pages (selection)
+- AdminLogin.js
+- AdminLogin.jsx
+- AdminDashboard.jsx
+- AdminDashboard.js
+- benefits-of-home-tuition-in-india.js
+- benefits-of-home-tuition-in-india.jsx
+- SuperAdminDashboard.js
+- SuperAdminForms.jsx
+- SuperAdminForms.js
+- SuperAdminBlogs.jsx
+- quality-and-safety.jsx
+- quality-and-safety.js
+- PostInquiry.jsx
+- PostInquiry.js
+- personalized-learning.jsx
+- personalized-learning.js
+- ParentDashboard.js
+- TeacherDashboard.js
+- online-vs-offline.jsx
+- online-vs-offline.js
+- Notifications.jsx
+- MonthlyReport.jsx
+- MonthlyReport.js
+- TeacherDemoPortal.js
+- LoginTeacher.js
+- LoginStaff.jsx
+- LoginStaff.js
+- LoginParent.js
+- LoginInstitute.js
+- Login.jsx
+- LocationPage.jsx
+- LocationPage.js
+- InstituteDashboard.jsx
+- InstituteDashboard.js
+- IndividualBlog.css
+- how-to-choose-tutor.jsx
+- how-to-choose-tutor.js
+- TeacherDemoPortal.jsx
+- how-to-become-tutor.jsx
+- how-to-become-tutor.js
+- Home.js
+- home-vs-coaching.jsx
+- home-vs-coaching.js
+- growth-in-varanasi.jsx
+- growth-in-varanasi.js
+- FindTutors.jsx
+- FAQ.css
+- career-opportunities.jsx
+- career-opportunities.js
+- BlogPostPage.jsx
+- BlogPostPage.js
+- BlogPage.jsx
+- Blog.css
+- why-choose-param.jsx
+- why-choose-param.js
+- VerifyTeachers.jsx
+- VerifyTeachers.js
+- UploadIdentity.jsx
+- TuitionJobs.js
+- TuitionJobs.css
+- TuitionControlRoom.jsx
+- TuitionControlRoom.js
+- Terms.css
+- TeacherJobBoard.jsx
+- TeacherJobBoard.js
+- TeacherIDCard.jsx
+- TeacherIDCard.js
+
+Directory: src/publicPages (selection)
+- Blog.js
+- Blog.jsx
+- About.jsx
+- About.js
+- TuitionJobs.jsx
+- TuitionJobs.js
+- TuitionJobs.css
+- Terms.jsx
+- Terms.js
+- Home.jsx
+- Home.js
+- FAQ.jsx
+- FAQ.js
+- Contact.jsx
+- Contact.js
+
+Directory: src/roles (selection)
+- parent/Dashboard.jsx
+- parent/Dashboard.js
+- teacher/_Dashboard_backup.jsx
+- teacher/TeacherDashboard.js
+- teacher/Dashboard.jsx
+- teacher/Dashboard.js
+- superAdmin/Dashboard.jsx
+- superAdmin/Dashboard.js
+- superAdmin/AddBlog.jsx
+- admin/_Dashboard_backup.jsx
+- admin/Dashboard.jsx
+- admin/Dashboard.js
+
+Notes:
+- This is a snapshot of restored files after checking out from the backup branch `backup-before-restore-20260213-1500` on 2026-02-15.
+- Some directories contain both `.js` and `.jsx` variants; verify which the app imports at runtime.
+- The teacher backup file `_Dashboard_backup.jsx` currently contains a note only; full teacher UI may still need restoration from git history if required.
+
+Next steps (optional):
+- Run a smoke test of the dev server and capture console errors: `npm run dev` then open http://localhost:5179/.
+- Restore teacher full dashboard from git history if desired (I can do that next).

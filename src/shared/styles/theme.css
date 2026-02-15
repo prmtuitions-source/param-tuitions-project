@@ -1,0 +1,38 @@
+:root {
+  /* Project theme colors (canonical values provided) */
+  --gold: #d4af37; /* Gold used for headings/highlights */
+  --slate-900: #0f172a; /* Dark blue / slate (footer background) */
+  --slate-950: #0b1120; /* Darker slate (copyright bar) */
+  --blue-600: #2563eb;
+  --blue-700: #1d4ed8;
+  --green-600: #16a34a;
+  --red-600: #dc2626;
+  --slate-50: #f8fafc;
+  --white: #ffffff;
+  --shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+}
+
+/* Minimal theme utilities used across components */
+body {
+  font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  background-color: var(--slate-50);
+  color: var(--slate-900);
+}
+
+.theme-btn-gold {
+  background: var(--gold);
+  color: var(--slate-950);
+  padding: 10px 18px;
+  border-radius: 999px;
+  font-weight: 800;
+}
+
+.lottie-hero-section {
+  padding: 40px 6%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0));
+}
+
+.lottie-container { max-width: 900px; width: 100%; }

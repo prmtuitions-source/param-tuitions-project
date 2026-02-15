@@ -13,13 +13,13 @@ export const getAssignedAdmin = async (zoneName) => {
       .maybeSingle();
 
     if (error) {
-      console.error('Error fetching assigned admin:', error);
+      // Error fetching assigned admin
       return SUPER_ADMIN_ID;
     }
 
     return data ? data.admin_id : SUPER_ADMIN_ID;
   } catch (err) {
-    console.error('Unexpected error in getAssignedAdmin:', err);
+    // Unexpected error in getAssignedAdmin
     return SUPER_ADMIN_ID;
   }
 };

@@ -1,0 +1,21 @@
+User-agent: *
+
+# Block the old WordPress "Ghost" URLs
+Disallow: /candidate/
+Disallow: /candidate-category/
+Disallow: /wp-login.php
+Disallow: /wp-admin/
+Disallow: /?wjbp-ajax=
+
+# Block private Dashboard/System folders
+Disallow: /admin/
+Disallow: /dashboard/
+Disallow: /supabase/
+
+# Allow Google to crawl the important parts of Param Tuitions
+Allow: /
+Allow: /about
+Allow: /contact
+
+# Point Google to your new Sitemap
+Sitemap: https://paramtuitions.com/sitemap.xml

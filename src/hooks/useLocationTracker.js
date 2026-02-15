@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { supabase } from '../shared/utils/supabaseClient';
+import logger from '../shared/utils/logger';
 
 const useLocationTracker = (userId, role) => {
   useEffect(() => {
@@ -22,17 +23,17 @@ const useLocationTracker = (userId, role) => {
         });
 
         if (error) {
-          console.warn('Failed to save location:', error.message);
+          logger.warn('Failed to save location:', error.message);
         }
       } catch (e) {
-        console.error('RPC call to update location failed:', e);
+        logger.error('RPC call to update location failed:', e);
       }
     };
 
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(saveLocation, (err) => console.warn(`Location tracking error: ${err.message}`));
+    if (typeof navigator !== 'undefined' && navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(saveLocation, (err) => logger.warn(`Location tracking error: ${err.message}`));
     } else {
-      console.warn('Geolocation is not supported by this browser.');
+      logger.warn('Geolocation is not supported by this browser.');
     }
   }, [userId, role]);
 };
