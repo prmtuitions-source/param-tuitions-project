@@ -149,6 +149,43 @@ img { max-width: 100%; height: auto; }
   .hero-copy h1 { font-size: 2rem; }
 }
 
+/* Back-compat: some pages use .hero-content instead of .hero-inner */
+.hero .hero-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 40px;
+  justify-content: space-between;
+}
+.hero .hero-content h1 {
+  font-size: 2.8rem;
+  line-height: 1.03;
+  margin: 0 0 18px 0;
+  font-weight: 900;
+  color: var(--blue);
+  letter-spacing: -0.02em;
+}
+.hero .hero-content .hero-desc {
+  font-size: 1.05rem;
+  color: rgba(15, 25, 40, 0.8);
+  margin-bottom: 22px;
+  line-height: 1.6;
+  font-weight: 500;
+}
+.hero .hero-img-right {
+  flex: 0 0 360px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+@media (max-width: 991px) {
+  .hero .hero-content { flex-direction: column-reverse; gap: 24px; align-items: center; }
+  .hero .hero-img-right { width: 100%; flex: 0 0 auto; }
+  .hero .hero-content h1 { font-size: 2rem; text-align: center; }
+}
+
 @media (max-width: 640px) {
   .hero { padding: 36px 5%; }
   .hero-copy h1 { font-size: 1.6rem; }
