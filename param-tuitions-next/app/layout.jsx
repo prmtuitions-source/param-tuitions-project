@@ -1,6 +1,7 @@
 import './globals.css';
 import Header from './components/Header';
 import Footer from './components/Footer';
+import AnimationObserver from './components/AnimationObserver';
 
 export const metadata = {
   metadataBase: new URL('https://www.paramtuitions.com'),
@@ -40,6 +41,7 @@ export default function RootLayout({ children }) {
         />
       </head>
       <body className="min-h-screen flex flex-col">
+        <AnimationObserver />
         <Header />
         <main className="flex-1">{children}</main>
         <Footer />

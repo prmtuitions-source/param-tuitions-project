@@ -7,9 +7,7 @@
   --gold: #d4af37;
 }
 
-html {
-  scroll-behavior: smooth;
-}
+html { scroll-behavior: smooth; }
 
 body {
   font-family: 'Inter', sans-serif;
@@ -17,12 +15,86 @@ body {
   background: #ffffff;
 }
 
+/* ─── Core keyframes ─── */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(28px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeInRight {
+  from { opacity: 0; transform: translateX(28px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.88); }
+  to   { opacity: 1; transform: scale(1); }
+}
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-7px); }
+}
+@keyframes shimmerGold {
+  0%   { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+/* ─── Hero entrance animations ─── */
+.hero-badge  { animation: scaleIn   0.55s ease-out both; }
+.hero-title  { animation: fadeInUp  0.65s ease-out both; animation-delay: 0.1s; }
+.hero-desc   { animation: fadeInUp  0.65s ease-out both; animation-delay: 0.22s; }
+.hero-stats  { animation: fadeInUp  0.65s ease-out both; animation-delay: 0.34s; }
+.hero-cta    { animation: fadeInUp  0.65s ease-out both; animation-delay: 0.46s; }
+.hero-form   { animation: fadeInRight 0.7s ease-out both; animation-delay: 0.25s; }
+
+/* ─── Scroll reveal ─── */
+.reveal {
+  opacity: 0;
+  transform: translateY(22px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+.reveal.in-view {
+  opacity: 1;
+  transform: translateY(0);
+}
+.reveal-d1 { transition-delay: 70ms;  }
+.reveal-d2 { transition-delay: 140ms; }
+.reveal-d3 { transition-delay: 210ms; }
+.reveal-d4 { transition-delay: 280ms; }
+.reveal-d5 { transition-delay: 350ms; }
+.reveal-d6 { transition-delay: 420ms; }
+
+/* ─── Gold accent bar ─── */
+.gold-accent {
+  display: block;
+  width: 48px;
+  height: 4px;
+  background: linear-gradient(90deg, #d4af37, #f5d26a);
+  border-radius: 99px;
+  margin: 14px auto 0;
+}
+.gold-accent-left {
+  display: block;
+  width: 48px;
+  height: 4px;
+  background: linear-gradient(90deg, #d4af37, #f5d26a);
+  border-radius: 99px;
+  margin: 14px 0 0;
+}
+
+/* ─── Gradient text ─── */
+.text-gradient-gold {
+  background: linear-gradient(135deg, #d4af37 0%, #f5d26a 50%, #d4af37 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: shimmerGold 4s linear infinite;
+}
+
 @layer utilities {
-  .animate-fade-in {
-    animation: fadeIn 0.5s ease-in-out;
-  }
-  @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(12px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
+  .animate-marquee { animation: marquee 30s linear infinite; }
+  .animate-float   { animation: float 3.5s ease-in-out infinite; }
 }
