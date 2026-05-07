@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Menu, X, Phone, MessageCircle, ChevronDown, GraduationCap, Users, ShieldCheck } from 'lucide-react';
+import { Menu, X, Phone, MessageCircle, ChevronDown, GraduationCap, Users } from 'lucide-react';
 import logoSrc from '../../public/logo.webp';
 
 const NAV_LINKS = [
@@ -18,7 +18,6 @@ const NAV_LINKS = [
 const LOGIN_LINKS = [
   { href: '/login-parent', label: 'Parent Login', icon: Users },
   { href: '/login-teacher', label: 'Teacher Login', icon: GraduationCap },
-  { href: '/login-staff', label: 'Staff Login', icon: ShieldCheck },
 ];
 
 const PRIMARY_PHONE = '918756525373';
