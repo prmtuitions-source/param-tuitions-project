@@ -16,13 +16,9 @@ const VITE_ROUTES = [
   '/dashboard',
   '/support-center',
 
-  // Auth
+  // Auth (login-parent, login-teacher, login-staff are now Next.js pages)
   '/login',
-  '/login-parent',
-  '/login-teacher',
   '/login-institute',
-  '/login-staff',
-  '/admin-login',
   '/teacher-register',
 
   // Dashboards
@@ -58,7 +54,7 @@ const nextConfig = {
   },
 
   async redirects() {
-    return VITE_ROUTES.flatMap((route) => [
+    const viteRedirects = VITE_ROUTES.flatMap((route) => [
       {
         source: route,
         destination: `https://app.paramtuitions.com${route}`,
@@ -70,6 +66,13 @@ const nextConfig = {
         permanent: false,
       },
     ]);
+
+    // Legacy /admin-login → our new staff login page
+    const legacyRedirects = [
+      { source: '/admin-login', destination: '/login-staff', permanent: false },
+    ];
+
+    return [...legacyRedirects, ...viteRedirects];
   },
 };
 

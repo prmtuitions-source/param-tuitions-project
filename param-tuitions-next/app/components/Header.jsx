@@ -1,9 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Menu, X, Phone, MessageCircle } from 'lucide-react';
+import { Menu, X, Phone, MessageCircle, ChevronDown, GraduationCap, Users, ShieldCheck } from 'lucide-react';
 import logoSrc from '../../public/logo.webp';
 
 const NAV_LINKS = [
@@ -15,11 +15,29 @@ const NAV_LINKS = [
   { href: '/contact', label: 'Contact' },
 ];
 
+const LOGIN_LINKS = [
+  { href: '/login-parent', label: 'Parent Login', icon: Users },
+  { href: '/login-teacher', label: 'Teacher Login', icon: GraduationCap },
+  { href: '/login-staff', label: 'Staff Login', icon: ShieldCheck },
+];
+
 const PRIMARY_PHONE = '918756525373';
 const PRIMARY_DISPLAY = '+91 87565 25373';
 
 export default function Header() {
   const [open, setOpen] = useState(false);
+  const [loginOpen, setLoginOpen] = useState(false);
+  const loginRef = useRef(null);
+
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (loginRef.current && !loginRef.current.contains(e.target)) {
+        setLoginOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   return (
     <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-slate-100 shadow-sm">
@@ -51,7 +69,33 @@ export default function Header() {
           </nav>
 
           {/* Desktop CTA */}
-          <div className="hidden md:flex items-center gap-3">
+          <div className="hidden md:flex items-center gap-2">
+            {/* Login dropdown */}
+            <div className="relative" ref={loginRef}>
+              <button
+                onClick={() => setLoginOpen(!loginOpen)}
+                className="flex items-center gap-1.5 border border-slate-200 text-slate-700 hover:bg-slate-50 px-4 py-2 rounded-full text-sm font-semibold transition-colors"
+              >
+                Login
+                <ChevronDown size={13} className={`transition-transform ${loginOpen ? 'rotate-180' : ''}`} />
+              </button>
+              {loginOpen && (
+                <div className="absolute right-0 top-full mt-2 w-48 bg-white border border-slate-100 rounded-xl shadow-lg py-1.5 z-50">
+                  {LOGIN_LINKS.map(({ href, label, icon: Icon }) => (
+                    <Link
+                      key={href}
+                      href={href}
+                      onClick={() => setLoginOpen(false)}
+                      className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+                    >
+                      <Icon size={14} className="text-slate-400" />
+                      {label}
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+
             <a
               href={`https://wa.me/${PRIMARY_PHONE}?text=${encodeURIComponent('Hello, I need a home tutor in Varanasi.')}`}
               target="_blank"
@@ -95,7 +139,26 @@ export default function Header() {
               </Link>
             ))}
           </nav>
-          <div className="mt-5 flex flex-col gap-3">
+
+          {/* Mobile login links */}
+          <div className="mt-4 pt-4 border-t border-slate-100">
+            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Login</p>
+            <div className="flex flex-col gap-2">
+              {LOGIN_LINKS.map(({ href, label, icon: Icon }) => (
+                <Link
+                  key={href}
+                  href={href}
+                  onClick={() => setOpen(false)}
+                  className="flex items-center gap-2.5 border border-slate-200 text-slate-700 py-2.5 px-4 rounded-xl text-sm font-medium"
+                >
+                  <Icon size={15} className="text-slate-400" />
+                  {label}
+                </Link>
+              ))}
+            </div>
+          </div>
+
+          <div className="mt-4 flex flex-col gap-3">
             <a
               href={`https://wa.me/${PRIMARY_PHONE}?text=${encodeURIComponent('Hello, I need a home tutor in Varanasi.')}`}
               target="_blank"
