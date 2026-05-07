@@ -10,7 +10,8 @@ export async function generateStaticParams() {
 }
 
 export async function generateMetadata({ params }) {
-  const area = allAreaData[params.location];
+  const { location } = await params;
+  const area = allAreaData[location];
   if (!area) return {};
 
   const title = area.title || `Home Tutors in ${area.name}, Varanasi`;
@@ -22,12 +23,12 @@ export async function generateMetadata({ params }) {
     title,
     description,
     alternates: {
-      canonical: `https://www.paramtuitions.com/tutors-in/${params.location}`,
+      canonical: `https://www.paramtuitions.com/tutors-in/${location}`,
     },
     openGraph: {
       title,
       description,
-      url: `https://www.paramtuitions.com/tutors-in/${params.location}`,
+      url: `https://www.paramtuitions.com/tutors-in/${location}`,
       type: 'website',
     },
   };
@@ -40,8 +41,9 @@ function buildWaUrl(areaName) {
   return `https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(`Hello, I need a home tutor in ${areaName}, Varanasi.`)}`;
 }
 
-export default function LocationPage({ params }) {
-  const area = allAreaData[params.location];
+export default async function LocationPage({ params }) {
+  const { location } = await params;
+  const area = allAreaData[location];
   if (!area) notFound();
 
   const { name, title, intro, description, nearbyAreas = [], neighborhoods, schools = [],
@@ -73,7 +75,7 @@ export default function LocationPage({ params }) {
         itemListElement: [
           { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://www.paramtuitions.com' },
           { '@type': 'ListItem', position: 2, name: 'Home Tutors in Varanasi', item: 'https://www.paramtuitions.com/find-tutors' },
-          { '@type': 'ListItem', position: 3, name: `Tutors in ${name}`, item: `https://www.paramtuitions.com/tutors-in/${params.location}` },
+          { '@type': 'ListItem', position: 3, name: `Tutors in ${name}`, item: `https://www.paramtuitions.com/tutors-in/${location}` },
         ],
       },
       faq.length > 0 && {
