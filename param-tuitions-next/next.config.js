@@ -15,6 +15,22 @@ const nextConfig = {
   // Proxy all dashboard/auth/internal routes to the existing Vite app
   async rewrites() {
     const proxyRoutes = [
+      // Public pages that live in the Vite app
+      '/blog',
+      '/available-tuitions',
+      '/tuitions',
+      '/bureau',
+      '/why-choose-us',
+      '/terms',
+      '/post-inquiry',
+      '/booking',
+      '/booking-desk',
+      '/thank-you',
+      '/apply-school-teacher',
+      '/dashboard',
+      '/support-center',
+
+      // Auth routes
       '/login',
       '/login-parent',
       '/login-teacher',
@@ -22,25 +38,26 @@ const nextConfig = {
       '/login-staff',
       '/admin-login',
       '/teacher-register',
+
+      // Protected dashboard routes
       '/admin/dashboard',
       '/teacher/dashboard',
+      '/teacher/upload-identity',
       '/parent/dashboard',
       '/super-admin/dashboard',
-      '/institute-dashboard',
+      '/superadmin/dashboard',
+      '/institute/dashboard',
+      '/super-admin/forms',
+      '/super-admin/blogs',
+
+      // Admin / staff tools
       '/verify-teachers',
+      '/monthly-report',
       '/monthly-reports',
-      '/manage-forms',
       '/notifications',
       '/job-board',
-      '/id-card',
       '/teacher-id-card',
-      '/control-room',
-      '/post-inquiry',
-      '/booking',
-      '/booking-desk',
-      '/upload-identity',
-      '/thank-you',
-      '/apply-school-teacher',
+      '/tuition-control-room',
       '/google-contacts',
     ];
 
