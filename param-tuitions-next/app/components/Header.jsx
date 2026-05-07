@@ -2,7 +2,9 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Menu, X, Phone, MessageCircle } from 'lucide-react';
+import logoSrc from '../../public/logo.webp';
 
 const NAV_LINKS = [
   { href: '/', label: 'Home' },
@@ -25,12 +27,11 @@ export default function Header() {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 shrink-0">
-            <img
-              src="https://app.paramtuitions.com/logo.webp"
+            <Image
+              src={logoSrc}
               alt="Param Tuition Bureau"
-              width={160}
-              height={40}
               className="h-10 w-auto object-contain"
+              priority
             />
           </Link>
 

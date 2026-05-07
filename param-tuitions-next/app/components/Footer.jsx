@@ -1,4 +1,6 @@
 import Link from 'next/link';
+import Image from 'next/image';
+import logoSrc from '../../public/logo.webp';
 
 const LOCATION_SLUGS = [
   'lanka', 'sigra', 'durgakund', 'mahmoorganj', 'bhelupur',
@@ -62,7 +64,7 @@ export default function Footer() {
           {/* Brand */}
           <div className="flex flex-col gap-4">
             <Link href="/" className="inline-block">
-              <img src="https://app.paramtuitions.com/logo.webp" alt="Param Tuition Bureau" width={192} height={48} loading="lazy" className="h-12 w-auto object-contain" />
+              <Image src={logoSrc} alt="Param Tuition Bureau" className="h-12 w-auto object-contain" />
             </Link>
             <p className="text-slate-300 text-sm leading-relaxed">
               Varanasi's most trusted home tuition consultancy. Connecting students with 3,000+ verified tutors since 2010.
