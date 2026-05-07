@@ -30,7 +30,9 @@ export default function Header() {
             <Image
               src={logoSrc}
               alt="Param Tuition Bureau"
-              className="h-10 w-auto object-contain"
+              width={100}
+              height={100}
+              className="h-12 w-auto object-contain"
               priority
             />
           </Link>
