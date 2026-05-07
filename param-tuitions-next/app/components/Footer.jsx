@@ -62,7 +62,7 @@ export default function Footer() {
           {/* Brand */}
           <div className="flex flex-col gap-4">
             <Link href="/" className="inline-block">
-              <img src="/logo.webp" alt="Param Tuition Bureau" width={192} height={48} loading="lazy" className="h-12 w-auto object-contain" />
+              <img src="https://app.paramtuitions.com/logo.webp" alt="Param Tuition Bureau" width={192} height={48} loading="lazy" className="h-12 w-auto object-contain" />
             </Link>
             <p className="text-slate-300 text-sm leading-relaxed">
               Varanasi's most trusted home tuition consultancy. Connecting students with 3,000+ verified tutors since 2010.

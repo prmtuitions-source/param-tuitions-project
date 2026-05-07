@@ -26,7 +26,7 @@ export default function Header() {
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 shrink-0">
             <img
-              src="/logo.webp"
+              src="https://app.paramtuitions.com/logo.webp"
               alt="Param Tuition Bureau"
               width={160}
               height={40}
