@@ -1,9 +1,9 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { MapPin, Phone, MessageCircle, CheckCircle2, ChevronRight, Star, ArrowRight } from 'lucide-react';
-import { allAreaData, locationSlugs } from '../../../data/allAreaData';
+import { MapPin, Phone, MessageCircle, CheckCircle2, ChevronRight, Star, Building2 } from 'lucide-react';
+import { allAreaData, locationSlugs, BRANCH_DATA } from '../../../data/allAreaData';
 
-export const revalidate = false; // fully static
+export const revalidate = false;
 
 export async function generateStaticParams() {
   return locationSlugs.map((location) => ({ location }));
@@ -12,6 +12,7 @@ export async function generateStaticParams() {
 export async function generateMetadata({ params }) {
   const area = allAreaData[params.location];
   if (!area) return {};
+  const branch = BRANCH_DATA[area.branchKey] || BRANCH_DATA.lathiya;
 
   const title = area.title || `Home Tutors in ${area.name}, Varanasi`;
   const description = area.description
@@ -21,9 +22,7 @@ export async function generateMetadata({ params }) {
   return {
     title,
     description,
-    alternates: {
-      canonical: `https://www.paramtuitions.com/tutors-in/${params.location}`,
-    },
+    alternates: { canonical: `https://www.paramtuitions.com/tutors-in/${params.location}` },
     openGraph: {
       title,
       description,
@@ -33,40 +32,43 @@ export async function generateMetadata({ params }) {
   };
 }
 
-const WA_NUMBER = '918756525373';
-const PHONE_DISPLAY = '+91 87565 25373';
-
-function buildWaUrl(areaName) {
-  return `https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(`Hello, I need a home tutor in ${areaName}, Varanasi.`)}`;
-}
-
 export default function LocationPage({ params }) {
   const area = allAreaData[params.location];
   if (!area) notFound();
 
-  const { name, title, intro, description, nearbyAreas = [], neighborhoods, schools = [],
-    problems = [], benefits = [], testimonial, faq = [], cta } = area;
+  const branch = BRANCH_DATA[area.branchKey] || BRANCH_DATA.lathiya;
+
+  const {
+    name, title, intro, description, nearbyAreas = [], neighborhoods,
+    schools = [], problems = [], benefits = [], testimonial, faq = [], cta,
+  } = area;
+
+  const waUrl = `https://wa.me/${branch.waPhone}?text=${encodeURIComponent(`Hello, I need a home tutor in ${name}, Varanasi.`)}`;
+  const telHref = `tel:+91${branch.phone}`;
 
   const jsonLd = {
     '@context': 'https://schema.org',
     '@graph': [
       {
         '@type': 'LocalBusiness',
-        name: `Param Tuition Bureau – ${name}, Varanasi`,
+        name: `Param Tuition Bureau – ${name}`,
         url: `https://www.paramtuitions.com/tutors-in/${params.location}`,
-        telephone: '+918756525373',
+        telephone: `+91${branch.phone}`,
         address: {
           '@type': 'PostalAddress',
-          addressLocality: name,
+          streetAddress: branch.streetAddress,
+          addressLocality: 'Varanasi',
           addressRegion: 'Uttar Pradesh',
+          postalCode: branch.postalCode,
           addressCountry: 'IN',
         },
         description,
         priceRange: '₹₹',
         areaServed: {
-          '@type': 'City',
-          name: 'Varanasi',
+          '@type': 'Place',
+          name: `${name}, Varanasi`,
         },
+        hasMap: branch.mapUrl,
       },
       {
         '@type': 'BreadcrumbList',
@@ -97,7 +99,6 @@ export default function LocationPage({ params }) {
       {/* Hero */}
       <section className="bg-gradient-to-br from-[#0f172a] to-slate-800 text-white py-16 px-6">
         <div className="max-w-4xl mx-auto">
-          {/* Breadcrumb */}
           <nav className="flex items-center gap-1.5 text-xs text-slate-400 mb-6" aria-label="Breadcrumb">
             <Link href="/" className="hover:text-white">Home</Link>
             <ChevronRight size={12} />
@@ -121,26 +122,26 @@ export default function LocationPage({ params }) {
 
           <div className="flex flex-col sm:flex-row gap-4">
             <a
-              href={buildWaUrl(name)}
+              href={waUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center justify-center gap-2 bg-green-500 hover:bg-green-600 text-white font-bold px-7 py-4 rounded-full transition-colors shadow-lg text-base"
             >
               <MessageCircle size={20} />
-              Book Free Demo on WhatsApp
+              Request a Demo Class
             </a>
             <a
-              href={`tel:+${WA_NUMBER}`}
+              href={telHref}
               className="inline-flex items-center justify-center gap-2 border border-white/30 text-white hover:bg-white/10 font-semibold px-7 py-4 rounded-full transition-colors text-base"
             >
               <Phone size={18} />
-              {PHONE_DISPLAY}
+              {branch.displayPhone}
             </a>
           </div>
         </div>
       </section>
 
-      {/* Quick stats bar */}
+      {/* Quick stats */}
       <div className="bg-[#d4af37] py-4 px-6">
         <div className="max-w-4xl mx-auto flex flex-wrap gap-6 justify-center md:justify-start text-sm font-semibold text-[#0f172a]">
           <span>✓ 3,000+ Verified Tutors</span>
@@ -150,7 +151,29 @@ export default function LocationPage({ params }) {
         </div>
       </div>
 
-      {/* About section */}
+      {/* Branch NAP strip */}
+      <div className="bg-slate-50 border-b border-slate-200 py-4 px-6">
+        <div className="max-w-4xl mx-auto flex flex-col sm:flex-row sm:items-center gap-3 text-sm">
+          <div className="flex items-center gap-2 text-slate-600">
+            <Building2 size={15} className="text-[#d4af37] shrink-0" />
+            <span>
+              <span className="font-semibold text-[#0f172a]">{name}</span> is served by our{' '}
+              <Link href="/contact" className="font-semibold text-[#0f172a] hover:text-[#d4af37] underline underline-offset-2">
+                {branch.name}
+              </Link>
+            </span>
+          </div>
+          <span className="hidden sm:block text-slate-300">|</span>
+          <div className="flex items-center gap-3 text-slate-500 flex-wrap">
+            <span className="flex items-center gap-1"><MapPin size={12} className="text-[#d4af37]" />{branch.address}</span>
+            <a href={telHref} className="flex items-center gap-1 font-medium text-[#0f172a] hover:text-[#d4af37]">
+              <Phone size={12} />{branch.displayPhone}
+            </a>
+          </div>
+        </div>
+      </div>
+
+      {/* About */}
       <section className="py-14 px-6 bg-white">
         <div className="max-w-4xl mx-auto">
           <h2 className="text-2xl font-bold text-[#0f172a] font-poppins mb-5">
@@ -247,8 +270,8 @@ export default function LocationPage({ params }) {
               Also Find Tutors in Nearby Areas
             </h2>
             <div className="flex flex-wrap gap-3">
-              {nearbyAreas.map((area, i) => {
-                const nearbySlug = area.toLowerCase().replaceAll(' ', '-');
+              {nearbyAreas.map((nearby, i) => {
+                const nearbySlug = nearby.toLowerCase().replaceAll(' ', '-');
                 const hasPage = locationSlugs.includes(nearbySlug);
                 return hasPage ? (
                   <Link
@@ -257,12 +280,12 @@ export default function LocationPage({ params }) {
                     className="flex items-center gap-1.5 bg-white border border-slate-200 hover:border-[#0f172a] text-slate-700 hover:text-[#0f172a] rounded-full px-4 py-2 text-sm font-medium transition-all"
                   >
                     <MapPin size={13} className="text-[#d4af37]" />
-                    {area}
+                    {nearby}
                   </Link>
                 ) : (
                   <span key={i} className="flex items-center gap-1.5 bg-white border border-slate-100 text-slate-500 rounded-full px-4 py-2 text-sm">
                     <MapPin size={13} className="text-[#d4af37]" />
-                    {area}
+                    {nearby}
                   </span>
                 );
               })}
@@ -275,27 +298,28 @@ export default function LocationPage({ params }) {
       <section className="py-16 px-6 bg-gradient-to-br from-[#0f172a] to-slate-900 text-white">
         <div className="max-w-3xl mx-auto text-center">
           <h2 className="text-2xl md:text-3xl font-bold font-poppins mb-4">
-            {cta || `Book a Free Demo Class in ${name} Today`}
+            {cta || `Find a Tutor in ${name} – Book a Free Demo Today`}
           </h2>
-          <p className="text-slate-300 mb-8">
-            Contact us on WhatsApp or call. We'll match you with the right tutor within hours.
+          <p className="text-slate-300 mb-2">
+            Contact our <strong className="text-[#d4af37]">{branch.name}</strong> — we match you with the right tutor within hours.
           </p>
+          <p className="text-slate-400 text-sm mb-8">{branch.address}</p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <a
-              href={buildWaUrl(name)}
+              href={waUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center justify-center gap-2 bg-green-500 hover:bg-green-600 text-white font-bold px-8 py-4 rounded-full transition-colors"
             >
               <MessageCircle size={20} />
-              WhatsApp Us
+              Request a Demo Class
             </a>
             <a
-              href={`tel:+${WA_NUMBER}`}
+              href={telHref}
               className="inline-flex items-center justify-center gap-2 border border-white/30 text-white hover:bg-white/10 font-semibold px-8 py-4 rounded-full transition-colors"
             >
               <Phone size={18} />
-              Call Now
+              {branch.displayPhone}
             </a>
           </div>
         </div>
