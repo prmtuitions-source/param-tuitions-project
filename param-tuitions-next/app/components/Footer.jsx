@@ -119,6 +119,7 @@ export default function Footer() {
             <h3 className="text-sm font-bold text-[#f4d58d] uppercase tracking-wider">Support</h3>
             <Link href="/contact" className="text-slate-300 hover:text-white text-sm transition-colors">Contact Us</Link>
             <Link href="/terms" className="text-slate-300 hover:text-white text-sm transition-colors">Terms & Conditions</Link>
+            <Link href="/privacy" className="text-slate-300 hover:text-white text-sm transition-colors">Privacy Policy</Link>
             <a href="tel:+918756525373" className="text-slate-300 hover:text-white text-sm transition-colors">+91 87565 25373</a>
             <a href="tel:+918858805373" className="text-slate-300 hover:text-white text-sm transition-colors">+91 88588 05373</a>
             <a href="tel:+919208525373" className="text-slate-300 hover:text-white text-sm transition-colors">+91 92085 25373</a>
@@ -187,6 +188,8 @@ export default function Footer() {
       <div className="border-t border-slate-800 py-5 text-center text-slate-500 text-xs">
         &copy; {new Date().getFullYear()} Param Tuition Bureau, Varanasi. All rights reserved. |{' '}
         <Link href="/terms" className="hover:text-slate-300">Terms</Link>
+        {' '}|{' '}
+        <Link href="/privacy" className="hover:text-slate-300">Privacy</Link>
         {' '}|{' '}
         <span>Website by{' '}
           <a href="https://kashiwebstudio.com" target="_blank" rel="noopener noreferrer" className="hover:text-slate-300">
