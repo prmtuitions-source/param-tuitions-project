@@ -1,4 +1,7 @@
 {
+  "outputDirectory": "dist",
+  "buildCommand": "",
+  "installCommand": "",
   "redirects": [
     { "source": "/about",                  "destination": "https://paramtuitionbureau.com/about",                    "permanent": true },
     { "source": "/contact",                "destination": "https://paramtuitionbureau.com/contact",                  "permanent": true },
