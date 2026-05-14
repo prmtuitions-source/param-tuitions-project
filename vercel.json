@@ -1,0 +1,51 @@
+{
+  "redirects": [
+    { "source": "/about",                  "destination": "https://paramtuitionbureau.com/about",                    "permanent": true },
+    { "source": "/contact",                "destination": "https://paramtuitionbureau.com/contact",                  "permanent": true },
+    { "source": "/faq",                    "destination": "https://paramtuitionbureau.com/about",                    "permanent": true },
+    { "source": "/terms",                  "destination": "https://paramtuitionbureau.com/terms",                    "permanent": true },
+    { "source": "/policy",                 "destination": "https://paramtuitionbureau.com/privacy",                  "permanent": true },
+    { "source": "/privacy",                "destination": "https://paramtuitionbureau.com/privacy",                  "permanent": true },
+    { "source": "/blog/:slug*",            "destination": "https://paramtuitionbureau.com/",                         "permanent": true },
+    { "source": "/blog",                   "destination": "https://paramtuitionbureau.com/",                         "permanent": true },
+    { "source": "/available-tuitions",     "destination": "https://paramtuitionbureau.com/tuitions",                 "permanent": true },
+    { "source": "/apply-tuition",          "destination": "https://paramtuitionbureau.com/apply-tuition",            "permanent": true },
+    { "source": "/find-tutors",            "destination": "https://paramtuitionbureau.com/find-tutor",               "permanent": true },
+    { "source": "/post-inquiry",           "destination": "https://paramtuitionbureau.com/find-tutor",               "permanent": true },
+    { "source": "/tutors-in/:location",    "destination": "https://paramtuitionbureau.com/find-tutor",               "permanent": true },
+    { "source": "/login",                  "destination": "https://paramtuitionbureau.com/login-staff",              "permanent": true },
+    { "source": "/admin-login",            "destination": "https://paramtuitionbureau.com/login-staff",              "permanent": true },
+    { "source": "/login-staff",            "destination": "https://paramtuitionbureau.com/login-staff",              "permanent": true },
+    { "source": "/login-teacher",          "destination": "https://paramtuitionbureau.com/login-teacher",            "permanent": true },
+    { "source": "/teacher-register",       "destination": "https://paramtuitionbureau.com/teacher-register",         "permanent": true },
+    { "source": "/dashboard",              "destination": "https://paramtuitionbureau.com/dashboard",                "permanent": true },
+    { "source": "/upload-identity",        "destination": "https://paramtuitionbureau.com/teacher/upload-identity",  "permanent": true },
+    { "source": "/teacher/dashboard",      "destination": "https://paramtuitionbureau.com/teacher/dashboard",        "permanent": true },
+    { "source": "/job-board",              "destination": "https://paramtuitionbureau.com/job-board",                "permanent": true },
+    { "source": "/id-card",                "destination": "https://paramtuitionbureau.com/teacher-id-card",          "permanent": true },
+    { "source": "/teacher-id-card",        "destination": "https://paramtuitionbureau.com/teacher-id-card",          "permanent": true },
+    { "source": "/parent/dashboard",       "destination": "https://paramtuitionbureau.com/",                         "permanent": true },
+    { "source": "/admin/dashboard",        "destination": "https://paramtuitionbureau.com/admin/dashboard",          "permanent": true },
+    { "source": "/verify-teachers",        "destination": "https://paramtuitionbureau.com/verify-teachers",          "permanent": true },
+    { "source": "/control-room/:id",       "destination": "https://paramtuitionbureau.com/tuition-control-room/:id", "permanent": true },
+    { "source": "/notifications",          "destination": "https://paramtuitionbureau.com/notifications",            "permanent": true },
+    { "source": "/super-admin/dashboard",  "destination": "https://paramtuitionbureau.com/super-admin/dashboard",    "permanent": true },
+    { "source": "/monthly-reports",        "destination": "https://paramtuitionbureau.com/monthly-report",           "permanent": true },
+    { "source": "/manage-forms",           "destination": "https://paramtuitionbureau.com/super-admin/forms",        "permanent": true },
+    { "source": "/super-admin/blogs",      "destination": "https://paramtuitionbureau.com/super-admin/blogs",        "permanent": true },
+    { "source": "/institute-dashboard",    "destination": "https://paramtuitionbureau.com/",                         "permanent": true },
+    { "source": "/",                       "destination": "https://paramtuitionbureau.com/",                         "permanent": true },
+    { "source": "/:path*",                 "destination": "https://paramtuitionbureau.com/",                         "permanent": true }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "Strict-Transport-Security", "value": "max-age=63072000; includeSubDomains; preload" },
+        { "key": "X-Content-Type-Options",    "value": "nosniff" },
+        { "key": "X-Frame-Options",           "value": "DENY" },
+        { "key": "Referrer-Policy",           "value": "strict-origin-when-cross-origin" }
+      ]
+    }
+  ]
+}
