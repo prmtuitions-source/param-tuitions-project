@@ -2,10 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../shared/utils/supabaseClient';
 import Header from '../../shared/components/Header';
-// NEW: Import the Location Guard for mandatory GPS pinning
-import LocationGuard from '../../shared/components/LocationGuard'; 
-// Note: If you see "Tracking Prevention blocked access to storage for ...leaflet.css", 
-// it is a browser warning related to the CDN used in LocationGuard. It usually does not affect functionality.
 import useLocationTracker from '../../hooks/useLocationTracker';
 import DynamicFormRenderer from '../../shared/components/DynamicFormRenderer';
 
@@ -32,21 +28,7 @@ export default function TeacherDashboard() {
   const [showSelfieBooth, setShowSelfieBooth] = useState(false);
   const [capturing, setCapturing] = useState(false);
 
-  // NEW: Onboarding State
   const [activeTab, setActiveTab] = useState('overview');
-  const [showAvailabilityLock, setShowAvailabilityLock] = useState(false);
-
-  // NEW: Profile Lock State
-  const [showProfileLock, setShowProfileLock] = useState(false);
-  const [profileLockData, setProfileLockData] = useState({
-      full_name: '',
-      experience: '',
-      class_x_board: '',
-      main_location: '',
-      highest_qualification: '',
-      areas_served: [],
-      photo_url: ''
-  });
 
   // Registration State
   const [locations, setLocations] = useState([]); // Still needed for DynamicFormRenderer options
@@ -162,33 +144,6 @@ export default function TeacherDashboard() {
             setAvailabilitySlots(formattedSlots);
         }
 
-        // NEW: Check if availability update is needed (every 7 days)
-        const lastUpdate = new Date(profileData.last_availability_update || 0);
-        const now = new Date();
-        const diffDays = Math.ceil(Math.abs(now - lastUpdate) / (1000 * 60 * 60 * 24));
-        if (diffDays > 7) {
-            setShowAvailabilityLock(true);
-        }
-
-        // CHECK REGISTRATION LOCK
-        if (!tDetails?.setup_completed || !tDetails?.areas_served) {
-            // Check if any critical field is missing
-            if (!tDetails?.highest_qualification || !tDetails?.class_x_board || !tDetails?.main_location || !profileData.full_name || !tDetails?.years_of_experience || !tDetails?.photo_url || !tDetails?.areas_served) {
-                 setShowProfileLock(true);
-                 setProfileLockData({
-                     full_name: profileData.full_name || '',
-                     experience: tDetails?.years_of_experience || '',
-                     class_x_board: tDetails?.class_x_board || '',
-                     main_location: tDetails?.main_location || '',
-                     highest_qualification: tDetails?.highest_qualification || '',
-                     areas_served: tDetails?.areas_served ? tDetails.areas_served.split(', ') : [],
-                     photo_url: tDetails?.photo_url || ''
-                 });
-            } else if (!profileData.phone_number) {
-                 // If basic fields are present but docs/phone missing, go to registration tab
-                 setActiveTab('registration');
-            }
-        }
       }
 
       // 4. Fetch Active/Confirmed Tuitions
@@ -363,34 +318,6 @@ export default function TeacherDashboard() {
     }
   };
 
-  const handleLockPhotoUpload = async (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      
-      setLoading(true);
-      try {
-          const fileExt = file.name.split('.').pop();
-          const fileName = `${user.id}_profile_${Date.now()}.${fileExt}`;
-          const filePath = `profile-photos/${fileName}`;
-
-          const { error: uploadError } = await supabase.storage
-            .from('teacher-verification')
-            .upload(filePath, file);
-
-          if (uploadError) throw uploadError;
-
-          const { data: { publicUrl } } = supabase.storage
-            .from('teacher-verification')
-            .getPublicUrl(filePath);
-            
-          setProfileLockData(prev => ({ ...prev, photo_url: publicUrl }));
-      } catch (error) {
-          alert('Upload failed: ' + error.message);
-      } finally {
-          setLoading(false);
-      }
-  };
-
   const handleDetectLocation = () => {
       if (!navigator.geolocation) return alert("Geolocation is not supported.");
       
@@ -428,9 +355,6 @@ export default function TeacherDashboard() {
               });
 
               if (nearest && minDist < 20) { // 20km threshold
-                  if (showProfileLock) {
-                      setProfileLockData(prev => ({ ...prev, main_location: nearest.location_name }));
-                  }
                   alert(`GPS Updated! Nearest area detected: ${nearest.location_name}`);
               } else {
                   alert("GPS Updated! No specific area found nearby.");
@@ -442,43 +366,6 @@ export default function TeacherDashboard() {
           alert("Location access denied.");
           setLoading(false);
       });
-  };
-
-  const handleProfileLockSubmit = async () => {
-      if (!profileLockData.full_name || !profileLockData.experience || !profileLockData.class_x_board || !profileLockData.main_location || !profileLockData.highest_qualification || !profileLockData.photo_url || profileLockData.areas_served.length === 0) {
-          alert("Please fill all fields to continue.");
-          return;
-      }
-      setLoading(true);
-      try {
-          const { error: profileError } = await supabase.from('profiles').update({ full_name: profileLockData.full_name }).eq('id', user.id);
-          if (profileError) throw profileError;
-
-          const updates = {
-              class_x_board: profileLockData.class_x_board,
-              main_location: profileLockData.main_location,
-              highest_qualification: profileLockData.highest_qualification,
-              years_of_experience: profileLockData.experience,
-              areas_served: profileLockData.areas_served.join(', '),
-              photo_url: profileLockData.photo_url,
-              temporary_address: profileLockData.main_location, // Sync for consistency
-              setup_completed: true // Mark setup as done to prevent loop
-          };
-
-          const { error: detailsError } = await supabase.from('teacher_details').update(updates).eq('id', user.id);
-          if (detailsError) throw detailsError;
-          
-          alert("Profile updated! You can now access the dashboard.");
-          
-          // Update local state immediately to prevent lock screen loop without refetching
-          setProfile(prev => ({ ...prev, full_name: profileLockData.full_name }));
-          setDetails(prev => ({ ...prev, ...updates }));
-          setShowProfileLock(false);
-      } catch (e) {
-          alert("Error: " + e.message);
-      } finally {
-          setLoading(false);
-      }
   };
 
   const handleStartTuition = async (appId, tuitionId) => {
@@ -543,7 +430,7 @@ export default function TeacherDashboard() {
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    navigate('/login-teacher');
+    window.location.href = 'https://www.paramtuitions.com/login-teacher';
   };
 
   if (loading) return <div className="p-20 text-center font-bold text-blue-900">Loading Teacher Engine...</div>;
@@ -567,15 +454,6 @@ export default function TeacherDashboard() {
   };
   const timeSlots = generateTimeSlots();
 
-  // Dropdown Options
-  const experienceOptions = [
-    "0 Months", "3 Months", "6 Months", "9 Months",
-    ...Array.from({length: 20}, (_, i) => `${i + 1}`),
-    "20+"
-  ];
-  const qualificationOptions = ["Class 12", "Diploma", "Graduation", "Post-Graduation", "PHd"];
-  const boardOptions = ["UP", "CBSE", "ICSE", "Bihar", "Jharkhand", "Bengal", "Chattisgarh", "Maharashtra", "Delhi", "Madhya Pradesh", "Others"];
-
   const currentAdminPhone = profile?.admin_zone ? adminPhones[profile.admin_zone] : adminPhones['Admin 2'];
 
   // Helper to get submit button label
@@ -590,170 +468,7 @@ export default function TeacherDashboard() {
 
   return (
     <>
-      {/* NEW: MANDATORY LOCATION GUARD (Fires if profile.location is missing) */}
-      <LocationGuard 
-        user={user} 
-        currentProfile={profile} 
-        onLocationSet={() => initDashboard()} 
-      />
-
-      {/* NEW: PROFILE LOCK SCREEN */}
-      {showProfileLock && (
-        <div className="fixed inset-0 z-[110] bg-slate-900/95 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-white rounded-[40px] p-8 w-full max-w-2xl shadow-2xl text-center my-10">
-            <h2 className="text-2xl font-black text-slate-900 uppercase italic mb-2">Complete Your Profile</h2>
-            <p className="text-xs font-bold text-slate-400 uppercase mb-6">These details are required to match you with students.</p>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-left">
-                <div className="md:col-span-2 flex flex-col items-center">
-                    <div className="w-24 h-24 bg-slate-100 rounded-full overflow-hidden mb-2 border-4 border-slate-200">
-                        {profileLockData.photo_url ? (
-                            <img src={profileLockData.photo_url} alt="Profile" className="w-full h-full object-cover" />
-                        ) : (
-                            <div className="w-full h-full flex items-center justify-center text-slate-300"><i className="fas fa-user text-3xl"></i></div>
-                        )}
-                    </div>
-                    <label className="cursor-pointer bg-blue-50 text-blue-600 px-4 py-2 rounded-xl text-[10px] font-black uppercase hover:bg-blue-100">
-                        Upload Photo
-                        <input type="file" accept="image/*" className="hidden" onChange={handleLockPhotoUpload} />
-                    </label>
-                </div>
-
-                <div>
-                    <label className="text-[10px] font-black text-slate-400 uppercase">Full Name</label>
-                    <input 
-                        type="text" 
-                        className="w-full p-3 bg-slate-50 rounded-xl font-bold text-sm border"
-                        value={profileLockData.full_name}
-                        onChange={e => setProfileLockData({...profileLockData, full_name: e.target.value})}
-                    />
-                </div>
-
-                <div>
-                    <label className="text-[10px] font-black text-slate-400 uppercase">Experience</label>
-                    <select 
-                        className="w-full p-3 bg-slate-50 rounded-xl font-bold text-sm border"
-                        value={profileLockData.experience}
-                        onChange={e => setProfileLockData({...profileLockData, experience: e.target.value})}
-                    >
-                        <option value="">Select...</option>
-                        {experienceOptions.map(o => <option key={o} value={o}>{o}</option>)}
-                    </select>
-                </div>
-
-                <div>
-                    <label className="text-[10px] font-black text-slate-400 uppercase">Class 10th Board</label>
-                    <select 
-                        className="w-full p-3 bg-slate-50 rounded-xl font-bold text-sm border"
-                        value={profileLockData.class_x_board}
-                        onChange={e => setProfileLockData({...profileLockData, class_x_board: e.target.value})}
-                    >
-                        <option value="">Select Board...</option>
-                        {boardOptions.map(b => <option key={b} value={b}>{b}</option>)}
-                    </select>
-                </div>
-                <div>
-                    <label className="text-[10px] font-black text-slate-400 uppercase">Highest Qualification</label>
-                    <select 
-                        className="w-full p-3 bg-slate-50 rounded-xl font-bold text-sm border"
-                        value={profileLockData.highest_qualification}
-                        onChange={e => setProfileLockData({...profileLockData, highest_qualification: e.target.value})}
-                    >
-                        <option value="">Select Qualification...</option>
-                        {qualificationOptions.map(q => <option key={q} value={q}>{q}</option>)}
-                    </select>
-                </div>
-                <div>
-                    <div className="flex justify-between items-center mb-1">
-                        <label className="text-[10px] font-black text-slate-400 uppercase">Main Location (Area)</label>
-                        <button onClick={handleDetectLocation} type="button" className="text-[9px] text-blue-600 font-bold uppercase hover:underline flex items-center gap-1">
-                            <i className="fas fa-crosshairs"></i> Detect
-                        </button>
-                    </div>
-                    <select 
-                        className="w-full p-3 bg-slate-50 rounded-xl font-bold text-sm border"
-                        value={profileLockData.main_location}
-                        onChange={e => setProfileLockData({...profileLockData, main_location: e.target.value})}
-                    >
-                        <option value="">Select Location...</option>
-                        {locations.map(l => <option key={l.id} value={l.location_name}>{l.location_name}</option>)}
-                    </select>
-                </div>
-
-                <div className="md:col-span-2">
-                    <label className="text-[10px] font-black text-slate-400 uppercase">Areas Served (Select Multiple)</label>
-                    <div className="w-full p-3 bg-slate-50 rounded-xl border h-32 overflow-y-auto grid grid-cols-2 gap-2">
-                        {locations.map(l => (
-                            <label key={l.id} className="flex items-center gap-2 text-xs font-bold text-slate-600 cursor-pointer">
-                                <input 
-                                    type="checkbox" 
-                                    checked={profileLockData.areas_served.includes(l.location_name)}
-                                    onChange={(e) => {
-                                        const newAreas = e.target.checked 
-                                            ? [...profileLockData.areas_served, l.location_name]
-                                            : profileLockData.areas_served.filter(a => a !== l.location_name);
-                                        setProfileLockData({...profileLockData, areas_served: newAreas});
-                                    }}
-                                    className="rounded text-blue-600 focus:ring-blue-500"
-                                />
-                                {l.location_name}
-                            </label>
-                        ))}
-                    </div>
-                </div>
-            </div>
-
-            <button 
-                onClick={handleProfileLockSubmit}
-                className="w-full mt-6 bg-blue-600 text-white py-4 rounded-2xl font-black uppercase tracking-widest shadow-xl hover:bg-blue-700"
-            >
-                Save & Unlock Dashboard
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* NEW: AVAILABILITY LOCK SCREEN (Every 7 Days) */}
-      {showAvailabilityLock && (
-        <div className="fixed inset-0 z-[110] bg-slate-900/95 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-white rounded-[40px] p-8 w-full max-w-lg shadow-2xl text-center">
-            <div className="w-16 h-16 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center mx-auto mb-4 animate-bounce">
-              <i className="fas fa-clock text-2xl"></i>
-            </div>
-            <h2 className="text-2xl font-black text-slate-900 uppercase italic mb-2">Weekly Schedule Check</h2>
-            <p className="text-xs font-bold text-slate-400 uppercase mb-6">Please confirm your availability for the upcoming week to continue receiving tuition requests.</p>
-            
-            <div className="space-y-4 mb-6 max-h-60 overflow-y-auto">
-                {availabilitySlots.map((slot, index) => (
-                    <div key={index} className="flex gap-2 items-center bg-slate-50 p-3 rounded-xl border">
-                        <select value={slot.from} onChange={(e) => updateSlot(index, 'from', e.target.value)} className="flex-1 p-2 bg-white rounded-lg text-xs font-bold border">
-                            {timeSlots.map(time => <option key={time} value={time}>{time}</option>)}
-                        </select>
-                        <span className="text-slate-400 font-bold">-</span>
-                        <select value={slot.to} onChange={(e) => updateSlot(index, 'to', e.target.value)} className="flex-1 p-2 bg-white rounded-lg text-xs font-bold border">
-                            {timeSlots.map(time => <option key={time} value={time}>{time}</option>)}
-                        </select>
-                        <button onClick={() => removeSlot(index)} className="text-red-500 px-2"><i className="fas fa-times"></i></button>
-                    </div>
-                ))}
-                <button onClick={addSlot} className="text-blue-600 text-xs font-bold uppercase hover:underline">+ Add Slot</button>
-            </div>
-
-            <div className="flex gap-3">
-                <button 
-                    onClick={handleMarkNotAvailable}
-                    className="flex-1 py-3 rounded-xl border-2 border-slate-200 text-slate-500 font-black text-[10px] uppercase hover:bg-slate-50"
-                >Mark Not Available</button>
-                <button 
-                    onClick={handleSaveAvailability}
-                    className="flex-1 bg-blue-600 text-white py-3 rounded-xl font-black text-[10px] uppercase shadow-xl hover:bg-blue-700"
-                >Confirm Schedule</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* NEW: SELFIE BOOTH MODAL */}
+      {/* SELFIE BOOTH MODAL */}
       {showSelfieBooth && (
         <div className="fixed inset-0 z-[100] bg-slate-900/90 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white rounded-[40px] p-8 w-full max-w-md text-center shadow-2xl">
