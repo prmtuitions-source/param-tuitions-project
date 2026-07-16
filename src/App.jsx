@@ -7,14 +7,17 @@ import Login from './pages/Login';
 import LoginStaff from './pages/LoginStaff';
 import AdminLogin from './pages/AdminLogin';
 import PostInquiry from './pages/PostInquiry';
+import LoginTeacher from './pages/LoginTeacher';
 import About from './publicPages/About';
 import Contact from './publicPages/Contact';
 import LocationPage from './pages/LocationPage';
 import FAQ from './publicPages/FAQ';
 import Terms from './publicPages/Terms';
+import Policy from './publicPages/Policy';
 import Blog from './publicPages/Blog';
 import BlogPage from './pages/BlogPage';
 import TuitionJobs from './publicPages/TuitionJobs';
+import ApplyTuition from './pages/ApplyTuition';
 
 // --- 2. IMPORT DASHBOARDS ---
 import ParentDashboard from './roles/parent/Dashboard';
@@ -32,11 +35,21 @@ import SuperAdminForms from './pages/SuperAdminForms';
 import Notifications from './pages/Notifications';
 import FindTutors from './pages/FindTutors';
 import SuperAdminBlogs from './pages/SuperAdminBlogs';
+import AuthCallback from './pages/AuthCallback';
 
 // --- 3. IMPORT SECURITY & COMPONENTS ---
 import LoginRedirect from './shared/components/LoginRedirect';
 import ProtectedRoute from './shared/components/ProtectedRoute';
 import ScrollToTop from './shared/components/ScrollToTop';
+
+// Redirect component for migrated pages → new Next.js site
+const RedirectToNewSite = ({ path = '' }) => {
+  React.useEffect(() => {
+    globalThis.location.replace(`https://www.paramtuitions.com${path}`);
+  }, [path]);
+  return null;
+};
+RedirectToNewSite.propTypes = { path: require('prop-types').string };
 
 /**
  * PARAM TUITION BUREAU - 2026 MASTER ARCHITECTURE
@@ -76,19 +89,26 @@ function App() {
           <Route path="/contact" element={<Contact />} />
           <Route path="/faq" element={<FAQ />} />
           <Route path="/terms" element={<Terms />} />
+          <Route path="/policy" element={<Policy />} />
+          <Route path="/privacy" element={<Policy />} />
           <Route path="/blog" element={<Blog />} />
           <Route path="/blog/:slug" element={<BlogPage />} />
           <Route path="/available-tuitions" element={<TuitionJobs />} />
+          <Route path="/apply-tuition" element={<ApplyTuition />} />
           <Route path="/find-tutors" element={<FindTutors />} />
           
           {/* DYNAMIC LOCATION ROUTE - Handles all Tutors in [Area] links */}
           <Route path="/tutors-in/:location" element={<LocationPage />} />
           
+          {/* Auth callback — receives forwarded tokens from paramtuitionbureau.com */}
+          <Route path="/auth/callback" element={<AuthCallback />} />
+
           {/* --- LOGIN & REGISTRATION --- */}
           <Route path="/login" element={<Login />} />
           <Route path="/login-staff" element={<LoginStaff />} />
-          <Route path="/teacher-register" element={<Login />} />
+          <Route path="/teacher-register" element={<LoginTeacher />} />
           <Route path="/admin-login" element={<AdminLogin />} />
+          <Route path="/login-teacher" element={<LoginTeacher />} />
           
           {/* Duplicate teacher-register route removed (use /teacher-register -> <Login /> above) */}
 
