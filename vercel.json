@@ -1,38 +1,25 @@
 {
   "outputDirectory": "dist",
-  "buildCommand": "npm run build",
-  "installCommand": "npm install",
-  "redirects": [
-    { "source": "/about",               "destination": "https://paramtuitionbureau.com/about",         "permanent": true },
-    { "source": "/contact",             "destination": "https://paramtuitionbureau.com/contact",       "permanent": true },
-    { "source": "/faq",                 "destination": "https://paramtuitionbureau.com/about",         "permanent": true },
-    { "source": "/terms",               "destination": "https://paramtuitionbureau.com/terms",         "permanent": true },
-    { "source": "/policy",              "destination": "https://paramtuitionbureau.com/privacy",       "permanent": true },
-    { "source": "/privacy",             "destination": "https://paramtuitionbureau.com/privacy",       "permanent": true },
-    { "source": "/blog/:slug*",         "destination": "https://paramtuitionbureau.com/",              "permanent": true },
-    { "source": "/blog",                "destination": "https://paramtuitionbureau.com/",              "permanent": true },
-    { "source": "/available-tuitions",  "destination": "https://paramtuitionbureau.com/tuitions",      "permanent": true },
-    { "source": "/apply-tuition",       "destination": "https://paramtuitionbureau.com/apply-tuition", "permanent": true },
-    { "source": "/find-tutors",         "destination": "https://paramtuitionbureau.com/find-tutor",    "permanent": true },
-    { "source": "/post-inquiry",        "destination": "https://paramtuitionbureau.com/find-tutor",    "permanent": true },
-    { "source": "/tutors-in/:location", "destination": "https://paramtuitionbureau.com/find-tutor",    "permanent": true },
-    { "source": "/login-teacher",       "destination": "https://paramtuitionbureau.com/login-teacher", "permanent": true },
-    { "source": "/teacher-register",    "destination": "https://paramtuitionbureau.com/teacher-register","permanent": true },
-    { "source": "/upload-identity",     "destination": "https://paramtuitionbureau.com/teacher/upload-identity","permanent": true },
-    { "source": "/",                    "destination": "https://paramtuitionbureau.com/",              "permanent": true }
-  ],
-  "rewrites": [
-    { "source": "/(.*)", "destination": "/index.html" }
-  ],
-  "headers": [
-    {
-      "source": "/(.*)",
-      "headers": [
-        { "key": "Strict-Transport-Security", "value": "max-age=63072000; includeSubDomains; preload" },
-        { "key": "X-Content-Type-Options",    "value": "nosniff" },
-        { "key": "X-Frame-Options",           "value": "DENY" },
-        { "key": "Referrer-Policy",           "value": "strict-origin-when-cross-origin" }
-      ]
-    }
+  "buildCommand": "",
+  "installCommand": "",
+  "routes": [
+    { "src": "/about",               "headers": { "Location": "https://paramtuitionbureau.com/about"         }, "status": 301 },
+    { "src": "/contact",             "headers": { "Location": "https://paramtuitionbureau.com/contact"       }, "status": 301 },
+    { "src": "/faq",                 "headers": { "Location": "https://paramtuitionbureau.com/about"         }, "status": 301 },
+    { "src": "/terms",               "headers": { "Location": "https://paramtuitionbureau.com/terms"         }, "status": 301 },
+    { "src": "/policy",              "headers": { "Location": "https://paramtuitionbureau.com/privacy"       }, "status": 301 },
+    { "src": "/privacy",             "headers": { "Location": "https://paramtuitionbureau.com/privacy"       }, "status": 301 },
+    { "src": "/blog(.*)",            "headers": { "Location": "https://paramtuitionbureau.com/"              }, "status": 301 },
+    { "src": "/available-tuitions",  "headers": { "Location": "https://paramtuitionbureau.com/tuitions"      }, "status": 301 },
+    { "src": "/apply-tuition",       "headers": { "Location": "https://paramtuitionbureau.com/apply-tuition" }, "status": 301 },
+    { "src": "/find-tutors",         "headers": { "Location": "https://paramtuitionbureau.com/find-tutor"    }, "status": 301 },
+    { "src": "/post-inquiry",        "headers": { "Location": "https://paramtuitionbureau.com/find-tutor"    }, "status": 301 },
+    { "src": "/tutors-in/(.*)",      "headers": { "Location": "https://paramtuitionbureau.com/find-tutor"    }, "status": 301 },
+    { "src": "/login-teacher",       "headers": { "Location": "https://paramtuitionbureau.com/login-teacher" }, "status": 301 },
+    { "src": "/teacher-register",    "headers": { "Location": "https://paramtuitionbureau.com/teacher-register" }, "status": 301 },
+    { "src": "/upload-identity",     "headers": { "Location": "https://paramtuitionbureau.com/teacher/upload-identity" }, "status": 301 },
+    { "src": "/",                    "headers": { "Location": "https://paramtuitionbureau.com/"              }, "status": 301 },
+    { "handle": "filesystem" },
+    { "src": "/(.*)", "dest": "/index.html", "status": 200 }
   ]
 }
