@@ -1,7 +1,7 @@
 {
   "outputDirectory": "dist",
-  "buildCommand": "",
-  "installCommand": "",
+  "buildCommand": "npm run build",
+  "installCommand": "npm install",
   "redirects": [
     { "source": "/about",               "destination": "https://paramtuitionbureau.com/about",         "permanent": true },
     { "source": "/contact",             "destination": "https://paramtuitionbureau.com/contact",       "permanent": true },
