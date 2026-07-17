@@ -1,0 +1,15 @@
+{
+  "@context": "https://schema.org",
+  "@type": "EducationalOrganization",
+  "name": "Param Tuition Bureau",
+  "address": {
+    "@type": "PostalAddress",
+    "streetAddress": "Near Latia Chauraha",
+    "addressLocality": "Varanasi",
+    "addressRegion": "UP",
+    "postalCode": "221001",
+    "addressCountry": "IN"
+  },
+  "url": "https://paramtuitions.com",
+  "founder": "Alka Dwivedi"
+}

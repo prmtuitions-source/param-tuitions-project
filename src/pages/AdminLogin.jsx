@@ -28,9 +28,9 @@ const AdminLogin = () => {
         if (profileError) throw profileError;
 
         if (profile.user_role === 'super_admin') {
-          navigate('/super-admin-dashboard', { replace: true });
+          navigate('/super-admin/dashboard', { replace: true });
         } else if (profile.user_role === 'admin') {
-          navigate('/admin-dashboard', { replace: true });
+          navigate('/admin/dashboard', { replace: true });
         } else {
           await supabase.auth.signOut();
           alert("Access Denied: You are not an Admin.");
